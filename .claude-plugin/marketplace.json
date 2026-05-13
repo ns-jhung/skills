@@ -1,0 +1,15 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "jhung",
+  "description": "Personal plugin marketplace for Johnny Hung's Claude Code skills",
+  "owner": {
+    "name": "Johnny Hung"
+  },
+  "plugins": [
+    {
+      "name": "jhung-skills",
+      "source": "./",
+      "description": "Personal skills for Netskope workflows"
+    }
+  ]
+}

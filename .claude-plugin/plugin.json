@@ -1,0 +1,8 @@
+{
+  "name": "jhung-skills",
+  "description": "Personal Claude Code skills for Netskope workflows (swg-lookup-svc deploys, unified search, etc.)",
+  "author": {
+    "name": "Johnny Hung"
+  },
+  "skills": "./skills/"
+}

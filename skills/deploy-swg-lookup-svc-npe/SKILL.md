@@ -8,7 +8,7 @@ allowed-tools: Bash(python3 *) Bash(bash -ic *) Read AskUserQuestion
 
 Trigger and follow the Jenkins job `one_button_swg-lookup-svc_helm` at
 `$NPE_JENKINS_URL/job/one_button_swg-lookup-svc_helm/` using the
-helper script at `~/.claude/skills/deploy-swg-lookup-svc-npe/run.py`.
+helper script at `${CLAUDE_PLUGIN_ROOT}/skills/deploy-swg-lookup-svc-npe/run.py`.
 
 ## Required env vars (read from user bashrc)
 
@@ -114,7 +114,7 @@ message returned via the API.
 ## How to run the helper
 
 ```bash
-bash -ic 'python3 ~/.claude/skills/deploy-swg-lookup-svc-npe/run.py \
+bash -ic 'python3 "${CLAUDE_PLUGIN_ROOT}/skills/deploy-swg-lookup-svc-npe/run.py" \
   --param POPS=<...> \
   --param RELEASE=<...> \
   --param TICKET=ENG-<...> \
