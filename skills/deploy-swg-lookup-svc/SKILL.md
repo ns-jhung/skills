@@ -53,10 +53,11 @@ may override any of them — `VERBOSE`, `WAIT`, `TIMEOUT`, `ATOMIC`,
   other value. The job runs with `BYPASS_JIRA=YES` so the ticket
   isn't validated, but we still want a real ticket on the build
   record for traceability.
-- **POPS uses the full pop name**, matching the
-  `netSkope/swg-github-workflow` `pops.yml`. When the user gives a
-  short alias, expand it before passing to Jenkins. Aliases also
-  determine env auto-inference:
+- **POPS uses the full pop name**, matching the `pops.yml` block in
+  `netSkope/swg-github-workflow/.github/workflows/deployment.yml`
+  (source of truth for alias → full-name + cluster). When the user
+  gives a short alias, expand it before passing to Jenkins. Aliases
+  also determine env auto-inference:
 
   | Alias | Full name | Cluster | Env |
   |---|---|---|---|
