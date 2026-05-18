@@ -92,12 +92,19 @@ may override any of them — `VERBOSE`, `WAIT`, `TIMEOUT`, `ATOMIC`,
 
 - **ENV auto-inference**: parse POPS aliases. If all are prod → `ENV=prod`.
   If all are npe → `ENV=npe`. If mixed or unknown → ask the user.
+- **CLUSTER_NAME is per-pop and the job runs against one cluster.**
+  Look up each pop's cluster (`c1` or `c4`) in the alias table. If the
+  user's POPS list spans multiple clusters (e.g. `sin2` is c1 and
+  `fr4` is c4), **split the request into one Jenkins build per
+  cluster**. Each build sends its own `POPS=<pops-in-that-cluster>`
+  and `CLUSTER_NAME=<c1|c4>`. Do not attempt to send a mixed-cluster
+  POPS list in a single build — Jenkins won't accept it.
 - **HELM_ARTIFACTORY_CHANNEL** depends on env and RELEASE:
-  - `ENV=prod` → always `dataplane-release-helm`
+  - `ENV=prod` → always `dataplane-production-helm`
   - `ENV=npe`, `v0.0.0-PR*` → `dataplane-develop-helm`
   - `ENV=npe`, anything else → `dataplane-release-helm`
 - **PDV_ARTIFACTORY_CHANNEL** (only relevant if `RUN_QE_PDV != DEPLOY_ONLY`):
-  - `ENV=prod` → `dataplane-release-docker`
+  - `ENV=prod` → `dataplane-production-docker`
   - `ENV=npe`, PDV tag `v0.0.0-PR*` → `dataplane-develop-docker`
   - `ENV=npe`, anything else → `dataplane-release-docker`
 - **PDV_CONFIG_IMAGE_TAG** defaults to the latest release of
@@ -154,27 +161,35 @@ message returned via the API.
 3. **Validate prod guardrails.** Apply the prod-specific rules above.
    If a guardrail trips, surface the error and stop — do not prompt
    to bypass.
-4. **Confirm.** Show the final parameter set (including `ENV` and the
-   target Jenkins URL) and ask for explicit confirmation before
-   triggering. Never trigger without confirmation — this job touches
-   real pops.
-5. **Trigger + poll.** Call `run.py` with `--env <npe|prod>` and the
-   chosen params. It:
+4. **Group POPS by cluster.** Look up each pop in the alias table and
+   group by `c1` / `c4`. Each cluster group becomes its own Jenkins
+   build with `CLUSTER_NAME=<c1|c4>` and `POPS=<comma-joined pops in
+   that cluster>`. Default sequencing is sequential (one cluster at a
+   time, abort if the first fails); ask the user if they prefer
+   parallel.
+5. **Confirm.** Show the final parameter set for **each** build
+   (including `ENV`, `CLUSTER_NAME`, and the target Jenkins URL) and
+   ask for explicit confirmation before triggering. Never trigger
+   without confirmation — this job touches real pops.
+6. **Trigger + poll.** For each cluster group, call `run.py` with
+   `--env <npe|prod>` and the chosen params. It:
    - POSTs to `/job/<job>/buildWithParameters`
    - Reads the `Location:` header → queue item URL
    - Polls queue until a `executable.number` appears
    - Polls `/job/<job>/<buildNumber>/api/json` until `building=false`
    - Prints final `result` (SUCCESS / FAILURE / ABORTED / UNSTABLE)
      and the console log URL.
-6. **Report.** Relay the result and the console URL. If FAILURE, offer
-   to tail the last ~200 lines of the console log.
+7. **Report.** Relay the result and the console URL for each build.
+   If FAILURE, offer to tail the last ~200 lines of the console log;
+   if running sequentially, do not start the next cluster's build.
 
 ## How to run the helper
 
 ```bash
 bash -ic 'python3 "${CLAUDE_PLUGIN_ROOT}/skills/deploy-swg-lookup-svc/run.py" \
   --env <npe|prod> \
-  --param POPS=<...> \
+  --param POPS=<pops-in-this-cluster> \
+  --param CLUSTER_NAME=<c1|c4> \
   --param RELEASE=<...> \
   --param TICKET=ENG-<...> \
   --param COMPONENT_NAME=<...> \
