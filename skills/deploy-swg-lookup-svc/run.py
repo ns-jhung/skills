@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Trigger the `one_button_swg-lookup-svc_helm` Jenkins job on NPE and
-wait for it to finish. Reads credentials from env vars:
+"""Trigger the `one_button_swg-lookup-svc_helm` Jenkins job on NPE or
+PROD and wait for it to finish. Reads credentials from env vars
+selected by --env:
 
-  NPE_JENKINS_URL, NPE_JENKINS_USER, NPE_JENKINS_API_TOKEN
+  --env npe  → NPE_JENKINS_URL,  NPE_JENKINS_USER,  NPE_JENKINS_API_TOKEN
+  --env prod → PROD_JENKINS_URL, PROD_JENKINS_USER, PROD_JENKINS_API_TOKEN
 """
 
 from __future__ import annotations
@@ -87,19 +89,22 @@ def build_done(d):
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--env", choices=("npe", "prod"), default="npe", help="Target Jenkins environment")
     ap.add_argument("--param", action="append", default=[], help="KEY=VALUE (repeatable)")
     ap.add_argument("--wait", action="store_true", help="Poll queue + build until done")
     ap.add_argument("--dry-run", action="store_true", help="Print request and exit")
     ap.add_argument("--timeout-sec", type=int, default=3600)
     args = ap.parse_args()
 
-    env = {k: os.environ.get(k) for k in ("NPE_JENKINS_URL", "NPE_JENKINS_USER", "NPE_JENKINS_API_TOKEN")}
+    prefix = args.env.upper()
+    keys = (f"{prefix}_JENKINS_URL", f"{prefix}_JENKINS_USER", f"{prefix}_JENKINS_API_TOKEN")
+    env = {k: os.environ.get(k) for k in keys}
     missing_env = [k for k, v in env.items() if not v]
     if missing_env:
         sys.exit(f"error: env vars not set: {', '.join(missing_env)} (source ~/.bashrc)")
-    base = env["NPE_JENKINS_URL"].rstrip("/")
-    user = env["NPE_JENKINS_USER"]
-    auth = "Basic " + base64.b64encode(f"{user}:{env['NPE_JENKINS_API_TOKEN']}".encode()).decode()
+    base = env[keys[0]].rstrip("/")
+    user = env[keys[1]]
+    auth = "Basic " + base64.b64encode(f"{user}:{env[keys[2]]}".encode()).decode()
 
     params = {}
     for item in args.param:
@@ -111,6 +116,7 @@ def main():
     if missing:
         sys.exit("error: missing required params: " + ", ".join(missing))
 
+    print(f"env : {args.env}")
     print(f"job : {base}/{JOB_PATH}/")
     print(f"user: {user}")
     print("params:")
