@@ -34,7 +34,7 @@ and that the user must supply:
 | `ENV` | `npe` (default) or `prod`. Auto-inferred from POPS when possible (see below). |
 | `POPS` | Comma-separated pop list, e.g. `qa01` (npe) or `sjc1` (prod). Required. |
 | `RELEASE` | swg-lookup-svc version to deploy, e.g. `v0.0.0-PR1352.5870` (npe-only) or `v1.2.3`. Required. |
-| `TICKET` | JIRA ticket. Defaults to `ENG-1` (BYPASS_JIRA=YES). |
+| `TICKET` | JIRA ticket. Required — always ask the user. |
 | `COMPONENT_NAME` | Component list, typically `swg-lookup-svc`. Required. |
 | `DEPLOY_TYPE` | One of `DRYRUN_AND_DEPLOY` (default), `DRYRUN`, `DEPLOY`. |
 
@@ -48,9 +48,11 @@ may override any of them — `VERBOSE`, `WAIT`, `TIMEOUT`, `ATOMIC`,
 
 ### Defaults & conventions
 
-- **TICKET: always `ENG-1`.** The job is configured with
-  `BYPASS_JIRA=YES` so ticket validity isn't checked. Do not ask the
-  user for a ticket unless they explicitly want to supply one.
+- **TICKET: required, no default.** Always ask the user for the JIRA
+  ticket via `AskUserQuestion` — do not fall back to `ENG-1` or any
+  other value. The job runs with `BYPASS_JIRA=YES` so the ticket
+  isn't validated, but we still want a real ticket on the build
+  record for traceability.
 - **POPS uses the full pop name**, matching the
   `netSkope/swg-github-workflow` `pops.yml`. When the user gives a
   short alias, expand it before passing to Jenkins. Aliases also
@@ -90,11 +92,11 @@ may override any of them — `VERBOSE`, `WAIT`, `TIMEOUT`, `ATOMIC`,
 - **ENV auto-inference**: parse POPS aliases. If all are prod → `ENV=prod`.
   If all are npe → `ENV=npe`. If mixed or unknown → ask the user.
 - **HELM_ARTIFACTORY_CHANNEL** depends on env and RELEASE:
-  - `ENV=prod` → always `dataplane-production-helm`
+  - `ENV=prod` → always `dataplane-release-helm`
   - `ENV=npe`, `v0.0.0-PR*` → `dataplane-develop-helm`
   - `ENV=npe`, anything else → `dataplane-release-helm`
 - **PDV_ARTIFACTORY_CHANNEL** (only relevant if `RUN_QE_PDV != DEPLOY_ONLY`):
-  - `ENV=prod` → `dataplane-production-docker`
+  - `ENV=prod` → `dataplane-release-docker`
   - `ENV=npe`, PDV tag `v0.0.0-PR*` → `dataplane-develop-docker`
   - `ENV=npe`, anything else → `dataplane-release-docker`
 - **PDV_CONFIG_IMAGE_TAG** defaults to the latest release of
