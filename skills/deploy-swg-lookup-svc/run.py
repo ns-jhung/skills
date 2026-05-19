@@ -23,23 +23,56 @@ JOB_PATH = "job/one_button_swg-lookup-svc_helm"
 REQUIRED = ["POPS", "RELEASE", "TICKET", "COMPONENT_NAME", "DEPLOY_TYPE"]
 TRANSIENT = (urllib.error.URLError, TimeoutError, ConnectionError, OSError)
 
+# Pop alias → kubeconfig basename under ~/.nsk/. Built from observed files;
+# update if a new pop's kubeconfig follows a different pattern.
+POP_KUBECONFIG = {
+    "sv5": "c1-sv5",
+    "sjc1": "c4-sjc1",
+    "sjc2": "stork-sjc2-mp-prod-sjc2-nc1",
+    "am2": "c4-am2",
+    "fr4": "c4-fr4",
+    "fra2": "stork-fra2-mp-prod-fra2-nc1",
+    "lon3": "stork-lon3-mp-prod-lon3-nc1",
+    "mel2": "stork-mel2-mp-mel2-nc1",
+    "ruh1": "stork-ruh1-mp-prod-ruh1-nc1",
+    "sin2": "stork-sin2-mp-prod-sin2-nc1",
+    "zur2": "stork-zur2-mp-prod-zur2-nc1",
+    "bom3": "stork-bom3-mp-prod-bom3-nc1",
+    "dfw3": "stork-dfw3-mp-prod-dfw3-nc1",
+}
+
+
+def pop_to_kubeconfig(pop):
+    """Return kubeconfig basename for a pop alias, or '<unknown-pop>' if not mapped."""
+    return POP_KUBECONFIG.get(pop.lower(), f"<unknown-{pop}>")
+
 
 def http(method, url, auth, *, data=None, retries=5):
-    """HTTP request with retry on transient network failures.
+    """HTTP request. Retries transient failures only for idempotent methods.
+
+    POST is never retried: a network timeout doesn't prove Jenkins rejected
+    the request, and retrying can queue a duplicate build. Caller must
+    handle POST failures manually.
 
     Returns (status, headers, body). HTTP 4xx/5xx are returned, not raised.
     """
     req = urllib.request.Request(url, data=data, method=method)
     req.add_header("Authorization", auth)
-    for attempt in range(retries):
+    effective_retries = 1 if method == "POST" else retries
+    for attempt in range(effective_retries):
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 return resp.status, dict(resp.headers), resp.read()
         except urllib.error.HTTPError as e:
             return e.code, dict(e.headers or {}), e.read()
         except TRANSIENT as e:
-            if attempt == retries - 1:
-                sys.exit(f"error: {method} {url} failed after {retries} tries: {e}")
+            if attempt == effective_retries - 1:
+                sys.exit(
+                    f"error: {method} {url} failed: {e}\n"
+                    + ("note: POST is not retried automatically to avoid duplicate builds. "
+                       "Check Jenkins build history to see if the job was already queued before retrying."
+                       if method == "POST" else f"({effective_retries} attempts)")
+                )
             print(f"retrying {method} ({e})", flush=True)
             time.sleep(5)
 
@@ -142,6 +175,18 @@ def main():
     result = info.get("result") or "UNKNOWN"
     print(f"\nRESULT: {result}")
     print(f"console: {build_url}/console")
+
+    pops = [p.strip() for p in params["POPS"].split(",") if p.strip()]
+    release = params["RELEASE"]
+    print("\nVerify deployed image tag per pop (run yourself):")
+    for pop in pops:
+        kubeconfig = f"~/.nsk/{pop_to_kubeconfig(pop)}.yaml"
+        print(
+            f"  KUBECONFIG={kubeconfig} kubectl -n swg-lookup-mp get pods "
+            f"-o jsonpath='{{range .items[*]}}{{.metadata.name}} "
+            f"{{.spec.containers[*].image}}{{\"\\n\"}}{{end}}'  # expect tag {release}"
+        )
+
     if result != "SUCCESS":
         sys.exit(2)
 

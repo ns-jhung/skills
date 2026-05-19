@@ -163,15 +163,51 @@ message returned via the API.
    without confirmation — this job touches real pops.
 6. **Trigger + poll.** For each cluster group, call `run.py` with
    `--env <npe|prod>` and the chosen params. It:
-   - POSTs to `/job/<job>/buildWithParameters`
+   - POSTs to `/job/<job>/buildWithParameters` (no auto-retry — see
+     "Safety rules" below)
    - Reads the `Location:` header → queue item URL
    - Polls queue until a `executable.number` appears
    - Polls `/job/<job>/<buildNumber>/api/json` until `building=false`
    - Prints final `result` (SUCCESS / FAILURE / ABORTED / UNSTABLE)
      and the console log URL.
-7. **Report.** Relay the result and the console URL for each build.
-   If FAILURE, offer to tail the last ~200 lines of the console log;
-   if running sequentially, do not start the next cluster's build.
+   - Prints a per-pop `kubectl get pods` one-liner that surfaces the
+     deployed image tag, with the expected RELEASE noted in a
+     trailing comment.
+7. **Verify deployed version (per build).** After each build finishes
+   (regardless of `result`), execute the printed
+   `KUBECONFIG=~/.nsk/<file>.yaml kubectl -n swg-lookup-mp get pods …`
+   one-liner for **every** pop in the build — do not skip this step
+   and do not just report what `run.py` printed. For each pop:
+   - Run the one-liner via `bash -ic '...'` so `~/.nsk` expands.
+   - Extract the tag from each `swg-lookup-svc` container image
+     (the part after the final `:` in
+     `…/swg-lookup-svc:<tag>`). Ignore sidecar images.
+   - **Pass:** every `swg-lookup-svc` pod in the namespace reports a
+     tag equal to the requested `RELEASE`.
+   - **Fail:** any pod reports a different tag, no pods are returned,
+     or kubectl errors out. Stop the workflow and surface which pods
+     mismatched (name + observed tag + expected tag). Do not start
+     the next sequential build.
+   - The namespace is **`swg-lookup-mp`** (not `swg-lookup-svc`).
+   - Per-pop kubeconfigs live in `~/.nsk/` and are downloaded via
+     `nsk cluster kubeconfig -p <prod|npe> -n <kubeconfig-basename>`.
+     The pop → kubeconfig mapping lives in `POP_KUBECONFIG` in
+     `run.py`; update it there if a new pop is added.
+   - If kubectl returns "the server has asked for the client to
+     provide credentials", the kubeconfig token has expired —
+     re-download with `nsk cluster kubeconfig -p prod -n <name>` (or
+     run `eng-skills:setup-k8s-access` for first-time setup), then
+     re-run the verification. Treat an unresolved auth failure as a
+     verification failure — do not declare the build verified.
+   - Note: a Jenkins `result=FAILURE` does **not** automatically mean
+     the deploy itself failed — post-deploy steps (PDV, monitoring)
+     can fail after pods are already running the new image. And a
+     Jenkins `result=SUCCESS` is **not** sufficient on its own; only
+     the kubectl tag check confirms the deploy.
+8. **Report.** Relay the result, the console URL, and the verified
+   image tag for each build. If FAILURE, offer to tail the last ~200
+   lines of the console log; if running sequentially, do not start the
+   next build until the previous one is both SUCCESS *and* verified.
 
 ## How to run the helper
 
@@ -205,3 +241,11 @@ bash -ic 'python3 "${CLAUDE_PLUGIN_ROOT}/skills/deploy-swg-lookup-svc/run.py" \
   build — tell the user to use a real release version instead.
 - Do not log the API token. If you need to show the curl equivalent,
   mask the auth: `-u "$<ENV>_JENKINS_USER:***"`.
+- **POST is never auto-retried.** A network timeout on
+  `buildWithParameters` does not prove Jenkins rejected the request —
+  retrying can queue a duplicate build that touches real pops. If
+  `run.py` exits with a POST failure, **do not re-run the helper
+  blindly**. First open the Jenkins job page (or query
+  `$<ENV>_JENKINS_URL/job/one_button_swg-lookup-svc_helm/api/json?tree=builds[number,timestamp,actions[parameters[name,value]]]{0,5}`)
+  and check whether a build with the same RELEASE+POPS was queued in
+  the last few minutes. Only retry if no matching build exists.
