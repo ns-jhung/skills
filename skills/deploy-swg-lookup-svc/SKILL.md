@@ -63,18 +63,8 @@ may override any of them — `VERBOSE`, `WAIT`, `TIMEOUT`, `ATOMIC`,
   |---|---|---|---|
   | `qa01` | `qa01-mp-npe-iad0-nc1` | c1 | npe |
   | `stg01` | `stg01-mp-iad0-nc4` | c1 | npe |
-  | `stg01legacy` | `stg01-mplegacy-iad0-nc4` | c1 | npe |
-  | `npa01` | `npa01-mp-npe-iad0-nc1` | c1 | npe |
-  | `npe02` | `npe02-mp-iad0-nc4` | c1 | npe |
-  | `npe02legacy` | `npe02-mplegacy-iad0-nc4` | c1 | npe |
   | `fed1` | `fed1mp-iad0-nc1` | c1 | npe |
-  | `mtp` | `c1-mtp-iad0-nc1` | c1 | npe |
-  | `prf` | `c1-prf-local` | c1 | npe |
   | `perf01` | `perf01-mp-iad0-nc6` | c1 | npe |
-  | `devint` | `devint-automation-iad0-nc1` | c1 | npe |
-  | `sjc1clone` | `c4-sjc1clone` | c1 | npe |
-  | `sje011` | `c3-stg-sje011` | c1 | npe |
-  | `betaskope` | `c1-betaskope-sje011` | c1 | npe |
   | `hippo` | `ch-hippo-local` | c1 | npe |
   | `sjc1` | `sjc1` | c4 | prod |
   | `sjc2` | `sjc2` | c1 | prod |
