@@ -23,27 +23,32 @@ JOB_PATH = "job/one_button_swg-lookup-svc_helm"
 REQUIRED = ["POPS", "RELEASE", "TICKET", "COMPONENT_NAME", "DEPLOY_TYPE"]
 TRANSIENT = (urllib.error.URLError, TimeoutError, ConnectionError, OSError)
 
-# Pop alias → kubeconfig basename under ~/.nsk/. Built from observed files;
-# update if a new pop's kubeconfig follows a different pattern.
+# Full pop name (as passed in POPS to Jenkins) → kubeconfig basename under ~/.nsk/.
+# Keys match the expanded names from the SKILL.md alias table, not the short aliases.
 POP_KUBECONFIG = {
-    "sv5": "c1-sv5",
+    "qa01-mp-npe-iad0-nc1": "stork-qa01-mp-npe-iad0-nc1",
+    "stg01-mp-iad0-nc4": "stork-stg01-mp-iad0-nc4",
+    "fed1mp-iad0-nc1": "stork-fed1mp-iad0-nc1",
+    "perf01-mp-iad0-nc6": "stork-perf01-mp-iad0-nc6",
+    "ch-hippo-local": "ch-hippo-local",
     "sjc1": "c4-sjc1",
     "sjc2": "stork-sjc2-mp-prod-sjc2-nc1",
     "am2": "c4-am2",
+    "dfw3": "stork-dfw3-mp-prod-dfw3-nc1",
     "fr4": "c4-fr4",
     "fra2": "stork-fra2-mp-prod-fra2-nc1",
     "lon3": "stork-lon3-mp-prod-lon3-nc1",
     "mel2": "stork-mel2-mp-mel2-nc1",
     "ruh1": "stork-ruh1-mp-prod-ruh1-nc1",
     "sin2": "stork-sin2-mp-prod-sin2-nc1",
+    "sv5": "c1-sv5",
     "zur2": "stork-zur2-mp-prod-zur2-nc1",
     "bom3": "stork-bom3-mp-prod-bom3-nc1",
-    "dfw3": "stork-dfw3-mp-prod-dfw3-nc1",
 }
 
 
 def pop_to_kubeconfig(pop):
-    """Return kubeconfig basename for a pop alias, or '<unknown-pop>' if not mapped."""
+    """Return kubeconfig basename for a full pop name, or '<unknown-pop>' if not mapped."""
     return POP_KUBECONFIG.get(pop.lower(), f"<unknown-{pop}>")
 
 
