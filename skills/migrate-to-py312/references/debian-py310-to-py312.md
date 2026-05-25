@@ -16,10 +16,31 @@ This is the **simplest** migration — Debian-only components don't have Dockerf
 
 ## Step 1 — Makefile
 
+Two changes:
+1. Bump `PYTHON_VERSION` to `py312`.
+2. Add `export PIP_INDEX_URL=...org-external-pypi/simple` (and `SETUPTOOLS_USE_DISTUTILS=local`) so the PEP 517 isolated build env can resolve `setuptools>=70.0.0`. Without this, the Drone wheel build fails with:
+
+   ```
+   ERROR: Could not find a version that satisfies the requirement setuptools>=70.0.0
+          (from versions: 44.1.1, 57.4.0, 59.2.0)
+   Looking in indexes: https://artifactory-rd.netskope.io/artifactory/api/pypi/netskope-py38/simple
+   ```
+
+   The Drone builder image's `/etc/pip.conf` points at the legacy `netskope-py38` index. Local `pip-unbounded.conf` is copied into the conda builder env, but `python -m build -w` spawns a PEP 517 isolated venv at `/tmp/build-env-XXX/` that does **not** inherit it — pip falls through to `/etc/pip.conf`. Only a process-level env var (`PIP_INDEX_URL`) overrides the file-level config for that ephemeral venv.
+
 ```diff
 -PYTHON_VERSION           ?= py310
 +PYTHON_VERSION           ?= py312
+
+ VIRTUALENV_PYPI_TYPE=unbounded
+
++export PIP_INDEX_URL=https://artifactory-rd.netskope.io/artifactory/api/pypi/org-external-pypi/simple
++export SETUPTOOLS_USE_DISTUTILS=local
++
+ ## Do not modify the following vars or include logic ##
 ```
+
+Reference: `dp-py-apps/ipsconfigmanager/Makefile` (commit `52fcd3fc25b`, ENG-986779) is the canonical working pattern.
 
 ## Step 2 — Print this `uv pip compile` command for the user
 

@@ -16,11 +16,12 @@ This is a **major** Debian migration — the build system switches from `pythonp
 
 ## Step 1 — Makefile
 
-Four changes:
+Five changes:
 - Add `PYTHON_VERSION ?= py312`
 - Add `COMPONENT_DIR` referencing the component path
 - Add `APP_ENV_YML` using the dynamic Python version
 - Switch `PYTHONPKG_MK_FILE` from `pythonpkg-py3.mk` to `conda-build.mk`
+- Add `export PIP_INDEX_URL=...org-external-pypi/simple` (and `SETUPTOOLS_USE_DISTUTILS=local`) so the PEP 517 isolated build env can resolve `setuptools>=70.0.0`. See "PIP_INDEX_URL note" below.
 
 ```diff
  WHAT                     = PDD Upload Service
@@ -32,6 +33,9 @@ Four changes:
  VENV_PIP                 = 24.1.2
  VENV_SETUPTOOLS          = 72.1.0
 
++export PIP_INDEX_URL=https://artifactory-rd.netskope.io/artifactory/api/pypi/org-external-pypi/simple
++export SETUPTOOLS_USE_DISTUTILS=local
++
  ## Do not modify the following vars or include logic ##
 +COMPONENT_DIR     = $(NS_BUILD_DIR)/components/debian-py38
 +APP_ENV_YML       = $(COMPONENT_DIR)/app-env-$(PYTHON_VERSION).yaml
@@ -42,6 +46,16 @@ Four changes:
 ```
 
 Substitute `pdd-upload-service` and `debian-py38` with the user's actual component values.
+
+**PIP_INDEX_URL note.** Without the `export PIP_INDEX_URL=...` line, the Drone wheel build fails:
+
+```
+ERROR: Could not find a version that satisfies the requirement setuptools>=70.0.0
+       (from versions: 44.1.1, 57.4.0, 59.2.0)
+Looking in indexes: https://artifactory-rd.netskope.io/artifactory/api/pypi/netskope-py38/simple
+```
+
+The Drone builder image's `/etc/pip.conf` points at the legacy `netskope-py38` index. Local `pip-unbounded.conf` is copied into the conda builder env, but `python -m build -w` spawns a PEP 517 isolated venv at `/tmp/build-env-XXX/` that does **not** inherit it — pip falls through to `/etc/pip.conf`. Only a process-level env var (`PIP_INDEX_URL`) overrides the file-level config for that ephemeral venv. Reference: `dp-py-apps/ipsconfigmanager/Makefile` (commit `52fcd3fc25b`, ENG-986779).
 
 ## Step 2 — Print this `uv pip compile` command for the user
 

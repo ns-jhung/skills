@@ -16,12 +16,13 @@ This is the **major** Stork migration. The build system itself is changing — `
 
 ## Step 1 — Makefile (significant restructure)
 
-Five things change:
+Six things change:
 1. Move `STORK_COMPONENT_NAME`, `FIRST_LOCAL_COMPONENT_TARGETS`, and the `stork-build.mk` include **to the top** of the file (better organization).
 2. Add Python 3.12 support variables: `PYTHON_VERSION ?= py312`, `COMPONENT_DIR`, and `APP_ENV_YML` referencing the versioned conda env.
 3. Replace direct `pythonpkg-py3.mk` include with **conditional `conda-build.mk`** logic (errors helpfully if missing).
 4. Remove the old `pythonpkg-py3.mk` include line.
 5. Add a `deb-install-package-items` target as a placeholder hook.
+6. Add `export PIP_INDEX_URL=...org-external-pypi/simple` (and `SETUPTOOLS_USE_DISTUTILS=local`) so the PEP 517 isolated build env can resolve `setuptools>=70.0.0`. See "PIP_INDEX_URL note" below.
 
 ```diff
 +
@@ -41,6 +42,9 @@ Five things change:
 
  VIRTUALENV_PYPI_TYPE=unbounded
 
++export PIP_INDEX_URL=https://artifactory-rd.netskope.io/artifactory/api/pypi/org-external-pypi/simple
++export SETUPTOOLS_USE_DISTUTILS=local
++
 -STORK_COMPONENT_NAME = dyncleanup
 -FIRST_LOCAL_COMPONENT_TARGETS = publish
 -include $(NS_BUILD_DIR)/compile/stork-build.mk
@@ -78,6 +82,16 @@ Five things change:
 ```
 
 Adjust component name (`dyncleanup`) and `COMPONENT_DIR` to match the user's component.
+
+**PIP_INDEX_URL note.** Without the `export PIP_INDEX_URL=...` line, the Drone wheel build fails:
+
+```
+ERROR: Could not find a version that satisfies the requirement setuptools>=70.0.0
+       (from versions: 44.1.1, 57.4.0, 59.2.0)
+Looking in indexes: https://artifactory-rd.netskope.io/artifactory/api/pypi/netskope-py38/simple
+```
+
+The Drone builder image's `/etc/pip.conf` points at the legacy `netskope-py38` index. Local `pip-unbounded.conf` is copied into the conda builder env, but `python -m build -w` spawns a PEP 517 isolated venv at `/tmp/build-env-XXX/` that does **not** inherit it — pip falls through to `/etc/pip.conf`. Only a process-level env var (`PIP_INDEX_URL`) overrides the file-level config for that ephemeral venv. Reference: `dp-py-apps/ipsconfigmanager/Makefile` (commit `52fcd3fc25b`, ENG-986779).
 
 ## Step 2 — Print this `uv pip compile` command for the user
 
