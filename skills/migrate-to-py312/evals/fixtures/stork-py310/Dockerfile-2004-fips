@@ -1,0 +1,12 @@
+# syntax = docker/dockerfile:experimental
+FROM artifactory-rd.netskope.io/org-base-docker/cloud-python3-py310-2004:26.84.225
+ARG PyPiVersion
+
+MAINTAINER Birajendu Sahu <birajendu@netskope.com>
+
+
+RUN apt-get update && apt-get -y install libssl-dev libffi-dev build-essential
+# Install requirements for clientstatus
+RUN --mount=type=bind,target=/src_tree \
+        python3.10 -m pip install --no-deps -r /src_tree/requirements.txt
+RUN --mount=type=bind,target=/src_tree python3.10 -m pip install /src_tree/dist/clientstatus-${PyPiVersion}-py3-none-any.whl

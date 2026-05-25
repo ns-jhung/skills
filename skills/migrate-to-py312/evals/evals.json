@@ -1,0 +1,94 @@
+{
+  "skill_name": "migrate-to-py312",
+  "evals": [
+    {
+      "id": 1,
+      "name": "stork-py310-incremental",
+      "prompt": "I'm in the clientstatus component directory. Please migrate this Stork-Debian component to Python 3.12. The repo files are in the working directory.",
+      "expected_output": "Detect Stork-Debian py310 path. Edit Makefile (PYTHON_VERSION py310->py312), tox.ini (envlist, find-links to {toxinidir}/dist, conda_env), Dockerfile-2004 and Dockerfile-2004-fips (FROM image, python3.10->python3.12). Print uv pip compile + conda-env-gen Docker commands with the working directory substituted in. Tell user to delete app-env-py310.yaml after generating new YAML.",
+      "files": [],
+      "assertions": [
+        {"text": "Makefile updated: PYTHON_VERSION ?= py312"},
+        {"text": "tox.ini updated: envlist = py312"},
+        {"text": "tox.ini updated: conda_env = app-env-py312.yaml"},
+        {"text": "tox.ini updated: --find-links uses {toxinidir}/dist (no NS_BUILD_DIR/components/...)"},
+        {"text": "Dockerfile-2004 FROM image is cloud-python3-py312-2004 (not -py310-)"},
+        {"text": "Dockerfile-2004 uses python3.12 -m pip (not python3.10)"},
+        {"text": "Dockerfile-2004-fips also updated to py312 base image and python3.12"},
+        {"text": "uv pip compile Docker command is printed in the response"},
+        {"text": "conda-env-gen Docker command is printed in the response"},
+        {"text": "User is told to delete app-env-py310.yaml"},
+        {"text": "Old app-env-py310.yaml file is NOT manually edited or written to (only deletion mentioned)"},
+        {"text": "pyproject.toml presence is checked; if missing, a 3-line one declaring [build-system] with setuptools.build_meta is created (or skill explicitly notes it already exists)"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "stork-py38-major",
+      "prompt": "Help me upgrade the nsdyncleanup service from py38 to py312. It's a Stork debian component.",
+      "expected_output": "Detect Stork-Debian py38 path. Major Makefile restructure: move STORK config to top, add PYTHON_VERSION/COMPONENT_DIR/APP_ENV_YML, switch to conditional conda-build.mk include, add deb-install-package-items target, remove pythonpkg-py3.mk include. Major tox.ini restructure: envlist py312, add tox-conda, switch deps to conda_env. Update both Dockerfiles: base image, remove python3.8-dev, switch from .tar.gz to wheel, use python3.12 -m pip. Print Docker commands.",
+      "files": [],
+      "assertions": [
+        {"text": "Makefile: PYTHON_VERSION ?= py312 added"},
+        {"text": "Makefile: pythonpkg-py3.mk reference replaced with conda-build.mk"},
+        {"text": "Makefile: conditional include block (HAVE_MK_PYTHONPKG / ifeq) is present"},
+        {"text": "tox.ini: envlist = py312"},
+        {"text": "tox.ini: requires = tox-conda is added"},
+        {"text": "tox.ini: old 'deps = --no-deps -Urrequirements.txt' block is removed"},
+        {"text": "tox.ini: conda_env = app-env-py312.yaml is added"},
+        {"text": "Dockerfile-2004: FROM image is cloud-python3-py312-2004"},
+        {"text": "Dockerfile-2004: python3.8-dev removed from apt install"},
+        {"text": "Dockerfile-2004: package install switched from .tar.gz to -py3-none-any.whl"},
+        {"text": "Dockerfile-2004: uses python3.12 -m pip"},
+        {"text": "Dockerfile-2004-fips also updated"},
+        {"text": "uv pip compile Docker command is printed"},
+        {"text": "conda-env-gen Docker command is printed"},
+        {"text": "User is told to delete app-env-py38.yaml"},
+        {"text": "pyproject.toml presence is checked; if missing, a 3-line one declaring [build-system] with setuptools.build_meta is created (or skill explicitly notes it already exists)"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "debian-py310-incremental",
+      "prompt": "Migrate this debian component (edr-client) from python 3.10 to 3.12. There are no Dockerfiles here, just the Makefile, tox.ini, and conda env.",
+      "expected_output": "Detect Debian-only py310 path. Edit Makefile (PYTHON_VERSION py310->py312). Edit tox.ini (envlist, find-links to {toxinidir}/dist, conda_env). Do NOT touch Dockerfiles (none exist). Print Docker commands. Tell user to delete app-env-py310.yaml.",
+      "files": [],
+      "assertions": [
+        {"text": "Makefile: PYTHON_VERSION ?= py312"},
+        {"text": "tox.ini: envlist = py312"},
+        {"text": "tox.ini: conda_env = app-env-py312.yaml"},
+        {"text": "tox.ini: --find-links uses {toxinidir}/dist"},
+        {"text": "No Dockerfile edits attempted (none exist in fixture)"},
+        {"text": "uv pip compile Docker command is printed"},
+        {"text": "conda-env-gen Docker command is printed"},
+        {"text": "User is told to delete app-env-py310.yaml"},
+        {"text": "Skill correctly identifies this as Debian-only (not Stork)"},
+        {"text": "pyproject.toml presence is checked; if missing, a 3-line one declaring [build-system] with setuptools.build_meta is created (or skill explicitly notes it already exists)"}
+      ]
+    },
+    {
+      "id": 4,
+      "name": "debian-py38-major",
+      "prompt": "I need to bump pdd-upload-service to Python 3.12. It's currently on py38.",
+      "expected_output": "Detect Debian-only py38 path. Makefile gets new vars (PYTHON_VERSION, COMPONENT_DIR, APP_ENV_YML) and switches PYTHONPKG_MK_FILE from pythonpkg-py3.mk to conda-build.mk. tox.ini gets envlist py312, requires tox-conda, drops deps block, adds conda_env and conda_channels. No Dockerfiles touched. Print Docker commands.",
+      "files": [],
+      "assertions": [
+        {"text": "Makefile: PYTHON_VERSION ?= py312 added"},
+        {"text": "Makefile: COMPONENT_DIR added"},
+        {"text": "Makefile: APP_ENV_YML added with $(PYTHON_VERSION) reference"},
+        {"text": "Makefile: PYTHONPKG_MK_FILE changed from pythonpkg-py3.mk to conda-build.mk"},
+        {"text": "tox.ini: envlist = py312"},
+        {"text": "tox.ini: requires = tox-conda is added"},
+        {"text": "tox.ini: --find-links uses {toxinidir}/dist"},
+        {"text": "tox.ini: old 'deps = --no-deps -Urrequirements.txt' block removed"},
+        {"text": "tox.ini: conda_env = app-env-py312.yaml added"},
+        {"text": "tox.ini: conda_channels with conda-forge added"},
+        {"text": "No Dockerfile edits attempted (none exist in fixture)"},
+        {"text": "uv pip compile Docker command is printed"},
+        {"text": "conda-env-gen Docker command is printed"},
+        {"text": "User is told to delete app-env-py38.yaml"},
+        {"text": "pyproject.toml presence is checked; if missing, a 3-line one declaring [build-system] with setuptools.build_meta is created (or skill explicitly notes it already exists)"}
+      ]
+    }
+  ]
+}
