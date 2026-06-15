@@ -31,6 +31,7 @@ POP_KUBECONFIG = {
     "fed1mp-iad0-nc1": "stork-fed1mp-iad0-nc1",
     "perf01-mp-iad0-nc6": "stork-perf01-mp-iad0-nc6",
     "ch-hippo-local": "ch-hippo-local",
+    "devint-automation-iad0-nc1": "stork-devint-automation-iad0-nc1",
     "sjc1": "c4-sjc1",
     "sjc2": "stork-sjc2-mp-prod-sjc2-nc1",
     "am2": "c4-am2",

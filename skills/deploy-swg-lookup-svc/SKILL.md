@@ -66,6 +66,7 @@ may override any of them — `VERBOSE`, `WAIT`, `TIMEOUT`, `ATOMIC`,
   | `fed1` | `fed1mp-iad0-nc1` | c1 | npe |
   | `perf01` | `perf01-mp-iad0-nc6` | c1 | npe |
   | `hippo` | `ch-hippo-local` | c1 | npe |
+  | `devint` | `devint-automation-iad0-nc1` | c1 | npe |
   | `sjc1` | `sjc1` | c4 | prod |
   | `sjc2` | `sjc2` | c1 | prod |
   | `am2` | `am2` | c4 | prod |
