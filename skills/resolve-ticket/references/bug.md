@@ -6,12 +6,11 @@ See `references/common.md` for the three resolution fields, the Resolution
 Category taxonomy, the ADF `editJiraIssue` call shape, and the Fix Version
 naming convention.
 
-Bug tickets require roughly a dozen fields beyond those three, enforced by the
-Resolved transition in **batches** — clearing one batch reveals the next. Set
-everything listed below up front in one `editJiraIssue`, then transition once.
-Some of these fields don't appear in `getJiraIssueTypeMetaWithFields` at all,
-and several report `required: false` while being hard-enforced by the validator,
-so this list — not metadata — is the reference.
+Bug tickets require roughly a dozen fields beyond those three. Set every field
+below in one `editJiraIssue`, then transition once. Some of them don't appear in
+`getJiraIssueTypeMetaWithFields` at all, and several report `required: false`
+while being hard-enforced by the transition validator — so this list, not
+metadata, is the reference for what to set.
 
 ## Additional fields
 
@@ -29,8 +28,8 @@ so this list — not metadata — is the reference.
 | Where in the Development stage did the bug get introduced | `customfield_16635` | select: `Requirement` / `Design` / `Coding` |
 | Involves Feature Flags or Configurations? | `customfield_35098` | radio buttons: `Yes` / `No` |
 
-Confirmed on Critical- and Major-priority Bugs. Lower priorities may enforce
-fewer of these; setting them all is harmless either way.
+Not every priority enforces every field, but setting them all is harmless — so
+set them all rather than trying to predict which ones this ticket needs.
 
 ## Transitioning to Resolved
 
@@ -38,12 +37,12 @@ Look for **"Resolve Issue"** (commonly id `5` on this workflow, but confirm from
 the live list — the standard "Close Issue" transition, commonly id `761`, is a
 different, later step, not the one this skill targets). It has `hasScreen: true`.
 
-If Jira still rejects the transition, the error names what's missing — but as
-prose, not field keys: *"Please update the Sub-Component field…"*, *"Please enter
-a value for the field \"Where bug should have been caught\"…"*. The wording
-differs in case and phrasing from the real field names, so match on substring.
-Set what the errors name and retry until it succeeds; a clean-looking first error
-is not the complete list.
+Setting every field above should let the transition succeed on the first
+attempt. If Jira still rejects it, the error names what's missing — but as prose,
+not field keys: *"Please update the Sub-Component field…"*, *"Please enter a
+value for the field \"Where bug should have been caught\"…"*. The wording differs
+in case and phrasing from the real field names, so match on substring, set the
+field, and report what was missing so this reference can be updated.
 
 For a field not in the table above, get its key and option ids from the
 transition-screen metadata — the only place some of them appear:

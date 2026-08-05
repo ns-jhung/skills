@@ -84,11 +84,10 @@ transition apply depends on the ticket's **issue type**.
    ```
    transitionJiraIssue(cloudId="netskope.atlassian.net", issueIdOrKey="ENG-XXXXXX", transitionId="<id>")
    ```
-   If Jira rejects it, the validation errors are the authoritative required-field
-   list: set what they name, re-confirm anything that needs a user decision, and
-   retry until it succeeds. Some workflows enforce fields in batches, so a clean
-   first error is not the complete list — see the type's reference. Don't force
-   the transition through by inventing a value just to satisfy the screen.
+   Setting every field the reference lists should let this succeed on the first
+   attempt. If Jira rejects it anyway, the validation errors name what's missing:
+   set those fields, re-confirming anything that needs a user decision. Don't
+   force the transition through by inventing a value just to satisfy the screen.
 
 ## Adding a new issue type
 
