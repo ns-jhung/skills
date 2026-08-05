@@ -1,34 +1,31 @@
 ---
 name: resolve-ticket
-description: Resolve a Netskope Jira ticket (Escalation, custom ticket, Bug, Nplan) by filling in its resolution fields (Resolution Category, Root Cause Analysis, Solution Provided) and transitioning it to Resolved. Use whenever the user gives a Jira/ENG ticket URL or key and asks to resolve it, close it, or fill in its resolution info — including phrases like "resolve this ticket", "fill in RCA for ENG-XXXXXX", or pastes a netskope.atlassian.net/browse/ENG-XXXXXX link. Currently covers Escalation and Bug issue types; other issue types (custom ticket, Nplan) are being added — if asked about one not yet covered, say so rather than guessing field names.
+description: Resolve a Netskope Jira ticket (Escalation, custom ticket, Bug, Nplan) by filling in its resolution fields (Resolution Category, Root Cause Analysis, Solution Provided) and transitioning it to Resolved. Use whenever the user gives a Jira/ENG ticket URL or key and asks to resolve it, close it, or fill in its resolution info — including phrases like "resolve this ticket", "fill in RCA for ENG-XXXXXX", or pastes a netskope.atlassian.net/browse/ENG-XXXXXX link. Covered issue types are listed in the skill's routing table; if a type isn't covered yet, say so rather than guessing field names.
 disable-model-invocation: false
 allowed-tools: Read Grep Glob AskUserQuestion Bash(gh pr view *) Bash(gh pr diff *) mcp__plugin_atlassian_atlassian__getJiraIssue mcp__plugin_atlassian_atlassian__getJiraIssueTypeMetaWithFields mcp__plugin_atlassian_atlassian__getJiraIssueRemoteIssueLinks mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue mcp__plugin_atlassian_atlassian__editJiraIssue mcp__plugin_atlassian_atlassian__transitionJiraIssue mcp__plugin_atlassian_atlassian__createIssueLink mcp__plugin_atlassian_atlassian__getIssueLinkTypes mcp__plugin_atlassian_atlassian__lookupJiraAccountId
 ---
 
 # Resolve a Netskope ticket
 
-Resolving a ticket at Netskope means two things: filling in its three
-resolution fields (Resolution Category, Root Cause Analysis, Solution
-Provided), then transitioning its status to Resolved. Which field keys, valid
-values, and transition apply depends on the ticket's **issue type** — this
-skill routes to a per-type reference so each type's quirks (field IDs,
-cascading-select taxonomies, transition names) live in one place and can be
-extended independently.
+Resolving a ticket at Netskope means filling in three resolution fields
+(Resolution Category, Root Cause Analysis, Solution Provided), then
+transitioning its status to Resolved. Which field keys, valid values, and
+transition apply depends on the ticket's **issue type**.
 
 ## Workflow
 
-1. **Identify the issue.** Extract the issue key from the URL or text the user
-   gave you (e.g. `https://netskope.atlassian.net/browse/ENG-1092541` → `ENG-1092541`).
-
-2. **Fetch the issue and determine its type.**
+1. **Fetch the issue.** Extract the key from the URL or text the user gave you
+   (e.g. `https://netskope.atlassian.net/browse/ENG-1092541` → `ENG-1092541`),
+   then fetch everything the rest of the workflow needs in one call — never
+   `fields=["*all"]`, which returns a huge response:
    ```
-   getJiraIssue(cloudId="netskope.atlassian.net", issueIdOrKey="ENG-XXXXXX")
+   getJiraIssue(cloudId="netskope.atlassian.net", issueIdOrKey="ENG-XXXXXX",
+                fields=["issuetype","summary","description","comment","issuelinks",
+                        "fixVersions","priority","labels","components","status",
+                        "resolution","customfield_10200"])
    ```
-   The default field set includes `issuetype` — you don't need `fields=["*all"]`
-   for this step, and asking for `*all` risks a huge response. Look at
-   `fields.issuetype.name`.
 
-3. **Load the reference for that issue type:**
+2. **Load the reference for `fields.issuetype.name`:**
 
    | Issue type | Reference |
    |---|---|
@@ -36,20 +33,15 @@ extended independently.
    | Bug | `references/bug.md` |
    | Custom ticket, Nplan | not yet written — tell the user this type isn't covered yet instead of improvising field IDs |
 
-   Read the matched reference file before doing anything else — it has the
-   exact field keys, allowed values, and transition details for that type.
-   Guessing custom field IDs from memory is a common way to silently corrupt
-   the wrong field on a real ticket, so don't skip this step even if the type
-   looks familiar from a previous session.
+   Read it, plus `references/common.md`, before anything else. Use only the
+   matched type's reference — a wrong custom field ID silently writes the wrong
+   field on a live ticket.
 
-4. **Read the full ticket and any linked PR before drafting anything.** This
-   is a hard prerequisite, not an optional fallback — never draft the
-   resolution fields from just the summary or a skimmed description.
+3. **Read the full ticket and any linked PR before drafting.** Never draft from
+   just the summary or a skimmed description.
 
-   - Fetch the full description and all comments — `getJiraIssue(...,
-     fields=["comment"])` if they weren't already included. Engineers often
-     leave the RCA/fix summary in a comment rather than a dedicated field, so
-     don't stop at the description.
+   - Engineers often leave the RCA/fix summary in a comment rather than a
+     dedicated field, so don't stop at the description.
    - Look for linked PRs/commits (remote issue links, or PR links mentioned in
      comments) and **read the actual diff**, not just the PR title or commit
      message summary line — the code change is what confirms the real root
@@ -60,72 +52,44 @@ extended independently.
      description usually name the service — e.g. `swg-lookup-svc`) for the
      behavior described, if no PR is linked yet.
 
-   Only after this reading is done, draft the content for the three
-   resolution fields (names may vary slightly by type, but the reference will
-   confirm): what category the resolution falls into, what the root cause
-   was, and what solution was provided.
+   Then draft the resolution field values. If this turns up nothing usable, say
+   plainly what you could and couldn't determine rather than guessing.
 
-   Only surface a question to the user if this investigation turns up
-   nothing usable (e.g. no linked PR, no comments, code doesn't show an
-   obvious cause) — at that point say plainly what you could and couldn't
-   determine, rather than guessing.
+4. **Confirm the drafted values with the user before writing anything.** Put the
+   multiple-choice decisions (Resolution Category, Fix Version/s, and any
+   type-specific selects the reference lists) in a single `AskUserQuestion` block
+   as parallel questions, with human-readable option names — never raw IDs. For
+   the long free-text fields (Root Cause Analysis, Solution Provided) show the
+   drafted prose and ask for approve-or-edit. For fields with one obvious correct
+   value, just set them and say briefly what you set.
 
-5. **Show the drafted values to the user and get explicit confirmation before
-   writing anything.** List all three fields plainly (field name → proposed
-   value, using the human-readable option names, not raw IDs) so the user can
-   catch a wrong category or a root cause that missed the point. Only proceed
-   to step 6 once the user confirms or edits the draft — never call
-   `editJiraIssue` on the first pass without this checkpoint.
+   `fixVersions` must never be left empty or guessed — if step 1 showed it empty,
+   it belongs in this block. Never call `editJiraIssue` before this checkpoint.
 
-6. **Set the fields**, using the field keys and value shapes from the type's
-   reference file, with the values as confirmed (or corrected) by the user.
+5. **Set the fields** — every field the reference lists, in one `editJiraIssue`,
+   using its field keys and value shapes and the values the user confirmed.
 
-7. **Check Fix Version/s before resolving.** If the `fixVersions` field is
-   empty, stop and ask the user which version to set rather than resolving
-   without one or guessing a value.
+6. **Get final go-ahead.** The transition is irreversible, so ask for an explicit
+   yes via `AskUserQuestion`. Everything was already confirmed in step 4, so keep
+   this to a compact go/no-go: the status change plus anything you defaulted
+   without asking.
 
-8. **Check the QA field before resolving.** `QA` (`customfield_10200`, a
-   single-user-picker) is common across issue types. If it's empty, default it
-   to **Michael Lee** (`minweil@netskope.com`,
-   accountId `712020:9e8b8f52-1fe7-4a95-bba7-db644537d687`) — no need to ask
-   the user first, unlike Fix Version/s above.
-
-9. **Get final user confirmation before resolving.** Before calling the
-   Resolved transition, show the user everything that is about to be set or
-   has been set — the three resolution fields (as confirmed in step 5), the
-   Fix Version/s value, the QA default (if applied), and any other
-   type-specific required field from the reference file — and get explicit
-   go-ahead. This is a distinct checkpoint from step 5: step 5 confirms the
-   drafted resolution content, this step confirms the full set of field
-   changes right before the irreversible transition call. Only proceed to the
-   next step once the user confirms.
-
-10. **Transition the issue to Resolved.** Fetch the live transition list for
-   this issue — transition IDs are workflow-specific and can differ per issue,
-   so don't reuse one from memory or from the reference file without
-   confirming it's still there:
+7. **Transition to Resolved.** Fetch the live transition list — IDs are
+   workflow-specific and can differ per issue, so don't reuse one from memory or
+   from a reference file without confirming it's still there:
    ```
    getTransitionsForJiraIssue(cloudId="netskope.atlassian.net", issueIdOrKey="ENG-XXXXXX")
    ```
-   Find the transition named `Resolved` (the reference file may note a common
-   ID as a hint) and apply it:
+   Apply the transition the reference names:
    ```
    transitionJiraIssue(cloudId="netskope.atlassian.net", issueIdOrKey="ENG-XXXXXX", transitionId="<id>")
    ```
-   If Jira rejects the transition citing a missing field, that means an
-   earlier step didn't actually set everything the workflow screen requires —
-   go back, set the missing field, and retry. Don't force the transition
-   through by inventing a value just to satisfy the screen.
+   If Jira rejects it, the validation errors are the authoritative required-field
+   list: set what they name, re-confirm anything that needs a user decision, and
+   retry until it succeeds. Some workflows enforce fields in batches, so a clean
+   first error is not the complete list — see the type's reference. Don't force
+   the transition through by inventing a value just to satisfy the screen.
 
 ## Adding a new issue type
 
-When covering a new type (custom ticket, Bug, Nplan, etc.), the pattern is:
-
-1. `getJiraIssue` on a real example of that type to get its `issuetype.id`.
-2. `getJiraIssueTypeMetaWithFields(cloudId, projectIdOrKey, issueTypeId)` to get
-   the field list — this response is large, so search it for field names like
-   "Resolution Category" / "Root Cause" / "Solution" rather than reading it whole.
-3. `getTransitionsForJiraIssue` on the example issue to find the Resolved
-   transition and confirm whether it has a screen (i.e. requires fields set first).
-4. Write a new `references/<type>.md` following the shape of `references/escalation.md`,
-   and add a row to the table in step 3 above.
+See `references/adding-a-type.md`.
