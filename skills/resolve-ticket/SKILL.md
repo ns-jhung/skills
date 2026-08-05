@@ -1,7 +1,8 @@
 ---
 name: resolve-ticket
 description: Resolve a Netskope Jira ticket (Escalation, custom ticket, Bug, Nplan) by filling in its resolution fields (Resolution Category, Root Cause Analysis, Solution Provided) and transitioning it to Resolved. Use whenever the user gives a Jira/ENG ticket URL or key and asks to resolve it, close it, or fill in its resolution info — including phrases like "resolve this ticket", "fill in RCA for ENG-XXXXXX", or pastes a netskope.atlassian.net/browse/ENG-XXXXXX link. Currently covers Escalation and Bug issue types; other issue types (custom ticket, Nplan) are being added — if asked about one not yet covered, say so rather than guessing field names.
-user_invocable: true
+disable-model-invocation: false
+allowed-tools: Read Grep Glob AskUserQuestion Bash(gh pr view *) Bash(gh pr diff *) mcp__plugin_atlassian_atlassian__getJiraIssue mcp__plugin_atlassian_atlassian__getJiraIssueTypeMetaWithFields mcp__plugin_atlassian_atlassian__getJiraIssueRemoteIssueLinks mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue mcp__plugin_atlassian_atlassian__editJiraIssue mcp__plugin_atlassian_atlassian__transitionJiraIssue mcp__plugin_atlassian_atlassian__createIssueLink mcp__plugin_atlassian_atlassian__getIssueLinkTypes mcp__plugin_atlassian_atlassian__lookupJiraAccountId
 ---
 
 # Resolve a Netskope ticket

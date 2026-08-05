@@ -1,7 +1,8 @@
 ---
 name: vault
 description: Read and write secrets in HashiCorp Vault. Use when the user wants to read a secret from Vault, write/store a secret to Vault, or work with Vault KV paths in Netskope services. Covers the Go (hashicorp/vault/api) and Python (hvac) patterns used across Netskope repos.
-user_invocable: true
+disable-model-invocation: false
+allowed-tools: Read Write Edit Grep Glob Bash
 ---
 
 # Vault read & write

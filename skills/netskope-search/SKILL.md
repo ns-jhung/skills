@@ -1,7 +1,7 @@
 ---
 name: netskope-search
 description: Unified search across Netskope's knowledge sources — Jira, Confluence, Slack, GitHub, and Artifactory. Use when the user asks to look something up across "all the places", wants context on a term/incident/ticket/service, or says things like "search everywhere for X", "find anything about Y", "what do we know about Z". Delegates to parallel sub-agents so the main conversation stays uncluttered.
-user_invocable: true
+disable-model-invocation: false
 ---
 
 # Netskope unified search
