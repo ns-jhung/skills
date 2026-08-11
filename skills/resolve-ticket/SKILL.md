@@ -1,16 +1,17 @@
 ---
 name: resolve-ticket
-description: Resolve a Netskope Jira ticket (Escalation, custom ticket, Bug, Nplan) by filling in its resolution fields (Resolution Category, Root Cause Analysis, Solution Provided) and transitioning it to Resolved. Use whenever the user gives a Jira/ENG ticket URL or key and asks to resolve it, close it, or fill in its resolution info — including phrases like "resolve this ticket", "fill in RCA for ENG-XXXXXX", or pastes a netskope.atlassian.net/browse/ENG-XXXXXX link. Covered issue types are listed in the skill's routing table; if a type isn't covered yet, say so rather than guessing field names.
+description: Resolve a Netskope Jira ticket (Escalation, Bug, Story, and other ENG issue types) by filling in its resolution fields (Resolution Category, Root Cause Analysis, Solution Provided) and transitioning it to Resolved. Use whenever the user gives a Jira/ENG ticket URL or key and asks to resolve it, close it, or fill in its resolution info — including phrases like "resolve this ticket", "fill in RCA for ENG-XXXXXX", or pastes a netskope.atlassian.net/browse/ENG-XXXXXX link. Covered issue types are listed in the skill's routing table; if a type isn't covered yet, say so rather than guessing field names.
 disable-model-invocation: false
-allowed-tools: Read Grep Glob AskUserQuestion Bash(gh pr view *) Bash(gh pr diff *) mcp__plugin_atlassian_atlassian__getJiraIssue mcp__plugin_atlassian_atlassian__getJiraIssueTypeMetaWithFields mcp__plugin_atlassian_atlassian__getJiraIssueRemoteIssueLinks mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue mcp__plugin_atlassian_atlassian__editJiraIssue mcp__plugin_atlassian_atlassian__transitionJiraIssue mcp__plugin_atlassian_atlassian__createIssueLink mcp__plugin_atlassian_atlassian__getIssueLinkTypes mcp__plugin_atlassian_atlassian__lookupJiraAccountId
+allowed-tools: Read Grep Glob AskUserQuestion Bash(gh pr view *) Bash(gh pr diff *) Bash(curl -s -u * https://netskope.atlassian.net/rest/dev-status/*) mcp__plugin_atlassian_atlassian__getJiraIssue mcp__plugin_atlassian_atlassian__getJiraIssueTypeMetaWithFields mcp__plugin_atlassian_atlassian__getJiraIssueRemoteIssueLinks mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue mcp__plugin_atlassian_atlassian__editJiraIssue mcp__plugin_atlassian_atlassian__transitionJiraIssue mcp__plugin_atlassian_atlassian__createIssueLink mcp__plugin_atlassian_atlassian__getIssueLinkTypes mcp__plugin_atlassian_atlassian__lookupJiraAccountId
 ---
 
 # Resolve a Netskope ticket
 
-Resolving a ticket at Netskope means filling in three resolution fields
-(Resolution Category, Root Cause Analysis, Solution Provided), then
-transitioning its status to Resolved. Which field keys, valid values, and
-transition apply depends on the ticket's **issue type**.
+Resolving a ticket at Netskope means filling in its resolution fields — usually
+Resolution Category, Root Cause Analysis and Solution Provided — then
+transitioning its status to Resolved. Which fields, valid values, and transition
+apply depends on the ticket's **issue type** — some types use a different set
+entirely, so let the type's reference decide which fields exist at all.
 
 ## Workflow
 
@@ -31,9 +32,10 @@ transition apply depends on the ticket's **issue type**.
    |---|---|
    | Escalation | `references/escalation.md` |
    | Bug | `references/bug.md` |
+   | Story | `references/story.md` |
    | Custom ticket, Nplan | not yet written — tell the user this type isn't covered yet instead of improvising field IDs |
 
-   Read it, plus `references/common.md`, before anything else. Use only the
+   Read it and `references/common.md` in one batch, before anything else. Use only the
    matched type's reference — a wrong custom field ID silently writes the wrong
    field on a live ticket.
 
@@ -42,15 +44,24 @@ transition apply depends on the ticket's **issue type**.
 
    - Engineers often leave the RCA/fix summary in a comment rather than a
      dedicated field, so don't stop at the description.
-   - Look for linked PRs/commits (remote issue links, or PR links mentioned in
-     comments) and **read the actual diff**, not just the PR title or commit
-     message summary line — the code change is what confirms the real root
-     cause, and a title can be misleading or incomplete.
+   - Find the linked PRs via the Development panel (see
+     `references/dev-status.md`); PR links in comments are a secondary source.
+     **Read the actual diff**, not just the PR title or commit message summary
+     line — the code change is what confirms the real root cause, and a title
+     can be misleading or incomplete.
    - Look for linked issues (e.g. a Bug this Escalation was cloned from, or a
      duplicate) that already has the RCA filled in.
    - Search the affected code/service (component field, summary, and
      description usually name the service — e.g. `swg-lookup-svc`) for the
      behavior described, if no PR is linked yet.
+
+   **Never conclude "there is no PR" from `getJiraIssueRemoteIssueLinks`.** Most
+   Netskope PR links live in the Jira **Development panel**, which that tool
+   does not return — an empty response there proves nothing. The PRs are also
+   routinely in a *different repo* from the one the ticket names: a service
+   ticket's dashboard and alert changes land in `prism`, its metric plumbing in
+   `infrastructure` — so a fruitless search of the service repo proves nothing
+   either. Read the merged diff via `gh`, never a local working copy.
 
    Then draft the resolution field values. If this turns up nothing usable, say
    plainly what you could and couldn't determine rather than guessing.

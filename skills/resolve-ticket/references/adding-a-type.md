@@ -14,8 +14,10 @@ Maintainer notes — not needed to resolve a ticket.
    ticket and record which fields the validation errors name.
 4. Look up those fields with the recipe below.
 5. Write `references/<type>.md` covering only what differs from
-   `references/common.md`, following the shape of `references/bug.md`, and add a
-   row to the routing table in `SKILL.md` step 2.
+   `references/common.md` — if the type uses the standard Resolve screen, say so
+   and list only its additions and overrides — following the shape of
+   `references/bug.md`, and add a row to the routing table in `SKILL.md` step 2.
+   The routing table is the only registry; don't enumerate types anywhere else.
 
 ## Looking up a field key or option id
 
