@@ -91,9 +91,11 @@ entirely, so let the type's reference decide which fields exist at all.
    ```
    getTransitionsForJiraIssue(cloudId="netskope.atlassian.net", issueIdOrKey="ENG-XXXXXX")
    ```
-   Apply the transition the reference names:
+   Apply the transition the reference names. `transition` takes a nested
+   `{"id": "<id>"}` object, not a top-level `transitionId` string — the tool
+   rejects the flat form with `Required at transition`:
    ```
-   transitionJiraIssue(cloudId="netskope.atlassian.net", issueIdOrKey="ENG-XXXXXX", transitionId="<id>")
+   transitionJiraIssue(cloudId="netskope.atlassian.net", issueIdOrKey="ENG-XXXXXX", transition={"id": "<id>"})
    ```
    Setting every field the reference lists should let this succeed on the first
    attempt. If Jira rejects it anyway, the validation errors name what's missing:
