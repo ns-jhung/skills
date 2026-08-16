@@ -66,13 +66,20 @@ entirely, so let the type's reference decide which fields exist at all.
    Then draft the resolution field values. If this turns up nothing usable, say
    plainly what you could and couldn't determine rather than guessing.
 
-4. **Confirm the drafted values with the user before writing anything.** Put the
-   multiple-choice decisions (Resolution Category, Fix Version/s, and any
-   type-specific selects the reference lists) in a single `AskUserQuestion` block
-   as parallel questions, with human-readable option names — never raw IDs. For
-   the long free-text fields (Root Cause Analysis, Solution Provided) show the
-   drafted prose and ask for approve-or-edit. For fields with one obvious correct
-   value, just set them and say briefly what you set.
+4. **Confirm the drafted values with the user before writing anything.** Every
+   value offered here — including fields the reference marks "not enforced" —
+   must trace to something read in step 3 (the PR diff, a comment, a linked
+   issue), never to a plausible-sounding default. If the PR gives no basis for
+   a non-required field, leave it out of both the questions and the eventual
+   `editJiraIssue` call rather than guessing a value to fill it.
+
+   Put the multiple-choice decisions (Resolution Category, Fix Version/s, and
+   any type-specific selects the reference lists) in a single `AskUserQuestion`
+   block as parallel questions, with human-readable option names — never raw
+   IDs — and ground each option's rationale in what the PR showed. For the long
+   free-text fields (Root Cause Analysis, Solution Provided) show the drafted
+   prose and ask for approve-or-edit. For fields with one obvious correct value,
+   just set them and say briefly what you set and why (citing the PR).
 
    `fixVersions` must never be left empty or guessed — if step 1 showed it empty,
    it belongs in this block. Never call `editJiraIssue` before this checkpoint.
