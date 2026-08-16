@@ -30,17 +30,21 @@ getTransitionsForJiraIssue(cloudId="netskope.atlassian.net", issueIdOrKey="ENG-X
 ```
 
 That response is hundreds of KB and will be spilled to a file. Don't read it
-whole — dump one compact line per field and pick out what you need:
+whole — dump one compact line per field, plus `allowedValues` for the field(s)
+you actually need, in the same pass:
 
 ```
 python3 -c "
 import json; d=json.load(open('<saved-file>'))
+target = {'<field-id-you-need>'}  # leave empty to just list every field
 for t in d['transitions']:
     for fid,f in (t.get('fields') or {}).items():
-        print(fid, f['name'], f.get('required'), len(f.get('allowedValues') or []))
+        vals = f.get('allowedValues') or []
+        print(fid, f['name'], f.get('required'), len(vals))
+        if fid in target:
+            for v in vals: print(' ', v.get('id'), v.get('value') or v.get('name'))
 "
 ```
 
-Then re-run for just the field you want, printing `allowedValues` to get the
-option ids. Add the result to the type's reference table so the next run doesn't
-need this lookup.
+Add the result to the type's reference table so the next run doesn't need this
+lookup.

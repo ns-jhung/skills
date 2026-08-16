@@ -19,7 +19,7 @@ this list, not metadata, is the reference for what to set.
 | Fix Version/s | `fixVersions` (system) | As `common.md`, and additionally cannot be `TBD` or `NA` unless the issue has label `no-code` or `no_code`. |
 | Bug Classification | `customfield_16637` | select: `Feature Issue (Feature never known to have worked)` / `Regression (A previously working feature is broken)` / `SaaS App Change (Vendor application changes that results in traffic or API change)` |
 | Fix Description | `customfield_12500` | text area (ADF) |
-| Sub-Component | `customfield_15000` | Use **`NA`** — option id `21484`, i.e. `[{"id": "21484"}]`; if rejected, re-derive it per `references/adding-a-type.md`. The error text itself says to select `NA` when the component has no applicable sub-component, so don't hunt the list for an approximate match. |
+| Sub-Component | `customfield_15000` | Use **`NA`** (id per `common.md`), i.e. `[{"id": "21484"}]`; if rejected, re-derive it per `references/adding-a-type.md`. The error text itself says to select `NA` when the component has no applicable sub-component, so don't hunt the list for an approximate match. |
 | Where Bug should have been caught | `customfield_16643` | select: `Build` / `Requirement Review` / `Design Review` / `Code Review` / `Unit Test` / `Functional Test` / `Component Integration Test` / `Regression Test` / `E2E Integration Test` / `Solution Test` / `Scale and Performance Test` / `Pre-Prod Validation` / `Security Scans` / `Post Deployment Validation` / `CI Tool` / `Other`. Picking `Other` also requires `customfield_33598` (free-text reason). |
 | Where in the Development stage did the bug get introduced | `customfield_16635` | select: `Requirement` / `Design` / `Coding` |
 
@@ -28,6 +28,7 @@ set them all rather than trying to predict which ones this ticket needs.
 
 ## Transitioning to Resolved
 
-The standard transition — see `references/common.md`. Bug's rejection messages
-look like *"Please update the Sub-Component field…"* or *"Please enter a value
-for the field \"Where bug should have been caught\"…"*.
+The standard transition — see `references/common.md`, including the
+metadata-under-reports-required caveat. Bug's rejection messages look like
+*"Please update the Sub-Component field…"* or *"Please enter a value for the
+field \"Where bug should have been caught\"…"*.

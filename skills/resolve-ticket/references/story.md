@@ -20,7 +20,7 @@ and overrides. Set everything in one `editJiraIssue`, then transition once.
 | Field name | Field key | Type / allowed values |
 |---|---|---|
 | Resolution | `resolution` (system) | select: `Fixed` (id `1`) / `Duplicate` (id `3`) / `Won't Do` (id `10000`). Use `Fixed` for a Story that shipped. |
-| Sub-Component | `customfield_15000` | Pick the option matching the ticket's **component** — e.g. component `URL Security (URLSec)` → `URLSec-Categorization` (id `17719`). A sibling/blocking ticket on the same component is the fastest source for the right id. Fall back to `NA` (id `21484`) only when the component genuinely has no applicable sub-component. |
+| Sub-Component | `customfield_15000` | Pick the option matching the ticket's **component** — e.g. component `URL Security (URLSec)` → `URLSec-Categorization` (id `17719`). A sibling/blocking ticket on the same component is the fastest source for the right id. Fall back to `NA` (id per `common.md`) only when the component genuinely has no applicable sub-component. |
 | Fix QA Test Recommendations | `customfield_12503` | Must be real verification steps — **`NA` is not acceptable**, even though closed sibling tickets sometimes contain it. Write what QA should actually check: the observable behavior, the trigger condition, and the expected result for each item in the Story's scope. |
 
 ## Other fields on the Resolve screen
@@ -38,6 +38,6 @@ clear answer; don't invent values to fill them.
 
 ## Transitioning to Resolved
 
-The standard transition — see `references/common.md`. Only `resolution` reports
-`required: true` in the screen metadata; every other required field above
-reports `required: false` while being enforced by the validator.
+The standard transition — see `references/common.md`, including the
+metadata-under-reports-required caveat: only `resolution` reports `required: true`
+here, but every other required field above is enforced anyway.

@@ -22,8 +22,9 @@ A wrong `applicationType` (e.g. `GitHub`) returns `{"errors":[],"detail":[]}` wi
 **HTTP 200** — indistinguishable from "no PRs", so a non-zero count with an empty
 detail response means the applicationType is wrong, not the ticket.
 
-Once you have the PR numbers, read each one — `gh pr view <n> --repo
-netSkope/<repo> --json title,body,files` — and reconcile them in merge order. A
-ticket's final state is often several PRs deep: a later PR may retune, disable,
-or revert what an earlier one shipped, and the last merged value is the one QA
-must verify.
+Once you have the PR numbers, fetch each one's `gh pr view <n> --repo
+netSkope/<repo> --json title,body,files` and `gh pr diff <n> --repo
+netSkope/<repo>` in parallel — they're independent reads — then reconcile them
+in merge order. A ticket's final state is often several PRs deep: a later PR
+may retune, disable, or revert what an earlier one shipped, and the last
+merged value is the one QA must verify.

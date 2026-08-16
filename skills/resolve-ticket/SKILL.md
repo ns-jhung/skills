@@ -55,13 +55,15 @@ entirely, so let the type's reference decide which fields exist at all.
      description usually name the service — e.g. `swg-lookup-svc`) for the
      behavior described, if no PR is linked yet.
 
-   **Never conclude "there is no PR" from `getJiraIssueRemoteIssueLinks`.** Most
-   Netskope PR links live in the Jira **Development panel**, which that tool
-   does not return — an empty response there proves nothing. The PRs are also
-   routinely in a *different repo* from the one the ticket names: a service
-   ticket's dashboard and alert changes land in `prism`, its metric plumbing in
-   `infrastructure` — so a fruitless search of the service repo proves nothing
-   either. Read the merged diff via `gh`, never a local working copy.
+   **Never conclude "there is no PR" from `getJiraIssueRemoteIssueLinks`, or from
+   a fruitless search of the repo the ticket names** — neither proves anything.
+   Most Netskope PR links live in the Jira **Development panel**, which
+   `getJiraIssueRemoteIssueLinks` does not return, and PRs are routinely in a
+   *different repo* from the one the ticket names: a service ticket's dashboard
+   and alert changes land in `prism`, its metric plumbing in `infrastructure`.
+   Read the merged diff via `gh`, never a local working copy. If more than one
+   PR is linked, fetch each one's `gh pr view`/`gh pr diff` in parallel — they're
+   independent reads (see `references/dev-status.md`).
 
    Then draft the resolution field values. If this turns up nothing usable, say
    plainly what you could and couldn't determine rather than guessing.
