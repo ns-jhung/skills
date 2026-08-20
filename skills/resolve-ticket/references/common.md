@@ -65,7 +65,26 @@ Other value shapes: select / radio-button fields take `{"value": "<option label>
 or `{"id": "<option id>"}` — prefer `id` when you already have it, since it
 avoids label-typo rejections. Multiselect fields take an array of those objects.
 `fixVersions` takes `[{"name": "<version name>"}]` or `[{"id": "<version id>"}]`.
-Single-user-pickers take `{"accountId": "<accountId>"}`.
+Single-user-pickers take `{"accountId": "<accountId>"}`. A few free-text reason
+fields (e.g. `customfield_33598` / `customfield_33599`) are **plain strings**,
+not ADF — the call fails with `Operation value must be a string` if you send ADF.
+
+### If `editJiraIssue` silently no-ops on nested fields
+
+The MCP `editJiraIssue` tool can drop a deeply-nested `fields` object and send
+`{}` instead — the call returns HTTP 200 with the issue unchanged, which looks
+like success but isn't. If a set doesn't take, fall back to Jira REST v3 directly
+(it handles nested ADF reliably); a 204 means the write landed:
+
+```
+# write the {"fields": {...}} payload to a file first, then:
+curl -s -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" -X PUT \
+  -H "Content-Type: application/json" --data @fields.json \
+  "https://netskope.atlassian.net/rest/api/3/issue/ENG-XXXXXX" -w "%{http_code}\n"
+```
+
+Confirm a field actually changed by re-reading it
+(`/rest/api/3/issue/ENG-XXXXXX?fields=<key>`) before transitioning.
 
 ## The standard Resolve screen
 

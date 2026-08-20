@@ -27,6 +27,38 @@ this list, not metadata, is the reference for what to set.
 | Where Bug was found | `customfield_16676` | select, similar option set to the field above (`Build` / `Requirement Review` / `Design Review` / `Code Review` / `Unit Test` / `Component Integration Test` / `Functional Test` / `Regression Test` / `E2E Integration Test` / `Solution test` / `Scale and Performance Test` / `Pre-Prod Validation` / `CodeScans` / `Security Scans` / `Pre-Production Deployment` / `Post Deployment Validation` / `Production (By Netskope)` / `Production Deployment` / `Customer` / `CI Tool` / `Other`) — but a **distinct field** from "Where Bug should have been caught". The transition rejects with *"Where Bug was found is required"* if missing; not listed in `getJiraIssueTypeMetaWithFields` as required, so easy to miss. Ground the answer in the PR/ticket evidence same as the sibling field. |
 | Where in the Development stage did the bug get introduced | `customfield_16635` | select: `Requirement` / `Design` / `Coding` |
 
+### RCA Analytics fields — required for `jira_escalated` + PR + `Fixed`
+
+When the ticket carries the `jira_escalated` label **and** has a PR linked
+**and** is being resolved as `Fixed`, the Resolve transition additionally
+rejects with *"Mandatory RCA Metrics are required when resolving
+'jira_escalated' ticket as 'Fixed'…"* and *"This Bug ticket has a PR linked to
+it. Please update all RCA Analytics fields…"* until these are set. "Bug Origin"
+and "Detection Point" in that error are just the workflow's names for
+`customfield_16676` (Where Bug was found) and `customfield_16635` (Where in the
+Development stage did the bug get introduced) — already in the table above.
+The genuinely extra ones:
+
+| Field name | Field key | Type / allowed values |
+|---|---|---|
+| What Type of code change caused the issue | `customfield_18295` | select: `New Feature` (`19308`) / `Enhancement` (`19309`) / `Scaling and performance improvement` (`19310`) / `Code refactoring` (`19311`) / `Third party library/code` (`19312`) / `Bug fix` (`19313`) |
+| When was the problematic code (logic) first committed to develop branch | `customfield_18296` | select: `Code committed: <= 3 months` (`19316`) / `> 3 months and <= 1 year` (`19317`) / `> 1 year and <= 3 years` (`19319`) / `> 3 years` (`19320`) |
+
+### The "Reason for Other" validator quirk
+
+The transition can reject with *"The 'Other' option was selected for Where Bug
+was found. Please ensure you populate the corresponding Reason for Other
+field."* **even when `customfield_16676` is not `Other`** (e.g. set to
+`Customer`) — a Jira validator misfire that actually wants the sibling
+free-text field populated regardless:
+
+| Field name | Field key | Type |
+|---|---|---|
+| Reason for Others selected : Where Bug was Found | `customfield_33599` | plain **string**, not ADF — pass `{"fields": {"customfield_33599": "<reason>"}}`. Fill it (harmless) to satisfy the validator; don't change `16676` away from its correct value just to silence this. |
+
+Its sibling `customfield_33598` (Reason for Others : Where bug should have been
+caught) is also a plain string, not ADF.
+
 Not every priority enforces every field, but setting them all is harmless — so
 set them all rather than trying to predict which ones this ticket needs.
 

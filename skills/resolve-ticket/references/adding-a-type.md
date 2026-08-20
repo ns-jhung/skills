@@ -46,5 +46,26 @@ for t in d['transitions']:
 "
 ```
 
+A lighter first pass — the edit-screen metadata is much smaller than the
+transition-screen one and lists most fields (name + `allowedValues` id/value)
+without the transitionId dance:
+
+```
+curl -s -u "$ATLASSIAN_EMAIL:$ATLASSIAN_API_TOKEN" \
+  "https://netskope.atlassian.net/rest/api/3/issue/ENG-XXXXXX/editmeta" -o editmeta.json
+python3 -c "
+import json; d=json.load(open('editmeta.json'))
+for k,v in d.get('fields',{}).items():
+    print(k, '|', v.get('name',''))
+    for o in v.get('allowedValues',[]): print('   ', o.get('id'), '=', o.get('value'))
+"
+```
+
+Note the workflow's error prose doesn't always use the real field name — e.g.
+"Bug Origin" / "Detection Point" map to "Where Bug was found" / "Where in the
+Development stage did the bug get introduced", not to any field literally named
+Origin or Detection. Match on meaning, not substring, before concluding a field
+is missing from the list.
+
 Add the result to the type's reference table so the next run doesn't need this
 lookup.
