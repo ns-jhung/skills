@@ -30,7 +30,7 @@ clear answer; don't invent values to fill them.
 
 | Field name | Field key | Type / allowed values |
 |---|---|---|
-| Resolution Categories | `customfield_16151` | select (flat, **not** cascading): `User Error / Customer Education / FAD` (`11942`) / `Documentation` (`11943`) / `Regression` (`11944`) / `Performance` (`12654`) / `Functionality Not Currently Supported` (`11945`) / `Functionality Enhanced / New Feature` (`11946`) / `Other` (`11994`). A delivered Story is usually `Functionality Enhanced / New Feature`. |
+| Resolution Categories | `customfield_16151` | select (flat, **not** cascading): `User Error / Customer Education / FAD` (`11942`) / `Documentation` (`11943`) / `Regression` (`11944`) / `Performance` (`12654`) / `Functionality Not Currently Supported` (`11945`) / `Functionality Enhanced / New Feature` (`11946`) / `Other` (`11994`). Not required — the default is to leave it unset; only set it when the user or the ticket explicitly names a category. Don't default to `Functionality Enhanced / New Feature` just because the Story shipped. |
 | Release Note | `customfield_24133` | select: `For Customer` (`27592`) / `For Internal Use` (`27593`) / `Not Required` (`27594`) |
 | Release Note Description | `customfield_16130` | text area (ADF) |
 | TOI Required | `customfield_16173` | select: `Y` (`11995`) / `N` (`11996`) |
