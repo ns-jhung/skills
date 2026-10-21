@@ -1,6 +1,6 @@
 ---
 name: deploy-swg-lookup-svc
-description: Trigger the Jenkins job `one_button_swg-lookup-svc_helm` on either NPE (cdjenkins.betaskope) or PROD (cdjenkins.sjc1.nskope.net) to deploy swg-lookup-svc. Auto-infers env from POPS, collects build parameters interactively, confirms with the user, kicks off the build, and polls the queue + build until it reaches a final status. Use when the user says things like "deploy swg-lookup-svc", "run the swg-lookup-svc helm job", "npe/prod helm deploy swg-lookup-svc", or references the one_button_swg-lookup-svc_helm Jenkins job.
+description: Trigger the Jenkins job `one_button_swg-lookup-svc_helm` on either NPE (cdjenkins.betaskope) or PROD (cdjenkins.sjc1.nskope.net) to deploy swg-lookup-svc. Auto-infers env from POPS, collects build parameters interactively (including PDV — every deploy now runs PDV against the new build by default; PDV_CONFIG_IMAGE_TAG auto-resolves to the latest `netSkope/swg-lookup-svc-pdv` GitHub release unless the user supplies one), confirms with the user, kicks off the build, and polls the queue + build until it reaches a final status. Use when the user says things like "deploy swg-lookup-svc", "run the swg-lookup-svc helm job", "npe/prod helm deploy swg-lookup-svc", or references the one_button_swg-lookup-svc_helm Jenkins job.
 disable-model-invocation: false
 argument-hint: [ENV=npe|prod] [POPS=..] [RELEASE=..] [TICKET=..] [COMPONENT_NAME=..] [DEPLOY_TYPE=..] [OTHER=..]
 allowed-tools: Bash(python3 *) Bash(bash -ic *) Read AskUserQuestion
@@ -94,19 +94,24 @@ may override any of them — `VERBOSE`, `WAIT`, `TIMEOUT`, `ATOMIC`,
   - `ENV=prod` → always `dataplane-production-helm`
   - `ENV=npe`, `v0.0.0-PR*` → `dataplane-develop-helm`
   - `ENV=npe`, anything else → `dataplane-release-helm`
-- **PDV_ARTIFACTORY_CHANNEL** (only relevant if `RUN_QE_PDV != DEPLOY_ONLY`):
+- **PDV_ARTIFACTORY_CHANNEL** (always sent now that PDV always runs):
   - `ENV=prod` → `dataplane-production-docker`
   - `ENV=npe`, PDV tag `v0.0.0-PR*` → `dataplane-develop-docker`
-  - `ENV=npe`, anything else → `dataplane-release-docker`
+  - `ENV=npe`, anything else (typical: `v1.0.x`) → `dataplane-release-docker`
 - **PDV_CONFIG_IMAGE_TAG** defaults to the latest release of
-  `netSkope/swg-mp-pdv`:
-  `gh release view --repo github.com/netSkope/swg-mp-pdv --json tagName --jq .tagName`
+  `netSkope/swg-lookup-svc-pdv` (NOT `swg-mp-pdv` — the PDV config is
+  per-component):
+  `gh release view --repo github.com/netSkope/swg-lookup-svc-pdv --json tagName --jq .tagName`
+  If the user provides a tag explicitly, use it; otherwise resolve via
+  `gh release view` at confirm time and show it in the confirmation.
 - **INSIGHTS_RELEASE_VERSION** defaults to `YYYY.MM` of today.
-- **RUN_QE_PDV defaults to `DEPLOY_ONLY`** on both envs (user
-  preference — skip PDV unless the user explicitly asks to run it).
-  When `DEPLOY_ONLY`, also omit `PDV_ARTIFACTORY_CHANNEL`,
-  `PDV_CONFIG_IMAGE_NAME`, `PDV_CONFIG_IMAGE_TAG` — let Jenkins use
-  its own defaults.
+- **RUN_QE_PDV defaults to `DEPLOY_AND_PDV`** on both envs. Every
+  deploy now runs PDV against the new build; `DEPLOY_ONLY` is no
+  longer the default. The user may still explicitly request
+  `DEPLOY_ONLY` or `PDV_ONLY` for a specific run.
+- Because PDV always runs, always send `PDV_ARTIFACTORY_CHANNEL`,
+  `PDV_CONFIG_IMAGE_NAME=swg-lookup-svc-pdv-config`, and
+  `PDV_CONFIG_IMAGE_TAG=<resolved tag>` — do not omit them.
 - **SLACK_CHANNEL defaults to empty** (user preference — do not spam a
   channel unless the user explicitly asks). Omit the param entirely
   from the trigger.
@@ -148,7 +153,11 @@ message returned via the API.
    `DEPLOY_TYPE`), use `AskUserQuestion` — one question per missing
    param, with known choices as options when the param is a Choice
    type. For free-text params let the user type via the automatic
-   "Other" slot or ask plainly.
+   "Other" slot or ask plainly. Then resolve `PDV_CONFIG_IMAGE_TAG`:
+   if the user didn't provide one, run
+   `gh release view --repo github.com/netSkope/swg-lookup-svc-pdv --json tagName --jq .tagName`
+   to fetch the latest PDV release. Surface the resolved tag (or the
+   user's override) in the confirmation step.
 3. **Validate prod guardrails.** Apply the prod-specific rules above.
    If a guardrail trips, surface the error and stop — do not prompt
    to bypass.
