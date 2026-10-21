@@ -79,5 +79,12 @@ Modeled on ENG-1151426, minus the parts the user doesn't want copied:
   Customer/Service Impact, Business hours, Release Version, Engineering VP,
   Story Points).
 
-If a batch's pops, the event offsets, or a default field value changes, edit
-the constants at the top of `run.py` — they are the single source of truth.
+If a batch's pops, the event offsets, or a default field value changes: the
+schedule constants (`EVENTS`, `BATCH_REGIONS`, `DATACENTERS`, `planned_dates`)
+live in `${CLAUDE_PLUGIN_ROOT}/skills/swg-lookup-svc-common/schedule.py`, shared
+with `swg-lookup-svc-update-deploy-ticket` — edit there, not in `run.py`.
+Field IDs and the remaining create-only defaults stay in `create()`.
+
+After the deploy runs (via `swg-lookup-svc-deploy`), use
+`swg-lookup-svc-update-deploy-ticket` to reschedule, re-version, or comment on
+this ticket.

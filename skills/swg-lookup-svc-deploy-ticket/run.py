@@ -25,18 +25,9 @@ PR_RE = re.compile(r"\(#(\d+)\)\s*$")
 
 COMPONENT_ID = "28059"  # URL Security (URLSec)
 ENGINEERING_VP = "5bfc7f8db203a71cc9cae4d9"  # Siying Yang
-NPE_POPS = ["ch-hippo-local", "qa01-mp-npe-iad0-nc1", "stg01-mp-iad0-nc4",
-            "fed1mp-iad0-nc1", "perf01-mp-iad0-nc6", "devint-automation-iad0-nc1"]
-# (event, days from the prod deploy date, detail, pops)
-EVENTS = [
-    ("NPE", -7, "Deploy following home pops", NPE_POPS),
-    ("Batch 1 (09:00, UTC+8)", 0, "Deployment", ["RUH1", "AM2", "FR4", "FRA2", "ZUR2", "LON3"]),
-    ("Batch 2 (15:00, UTC+8)", 0, "Deployment", ["DFW3", "SJC1", "SJC2", "SV5"]),
-    ("Batch 3 (24:00, UTC+8)", 0, "Deployment", ["MEL2", "SIN2", "BOM3"]),
-    ("Fed PreProd", -7, None, []),
-    ("Fed", 7, None, []),
-]
-DATACENTERS = sorted({p for e in EVENTS if e[0].startswith("Batch") for p in e[3]})
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "swg-lookup-svc-common"))
+from schedule import BATCH_REGIONS, DATACENTERS, EVENTS, planned_dates
+
 MONITORING_URL = "http://ui-prism.apps.netskope.io/goto/af61w62gt0ge8c?orgId=1"
 MAINTENANCE_URL = "https://netskope.atlassian.net/wiki/x/EYF27gE"
 # cc list appended at the end of the ticket description (from ENG-1358185)
@@ -47,16 +38,6 @@ CC_LIST = [
     {"accountId": "712020:f5c4462c-dc4c-4b67-b57a-545f5ade3fbf", "displayName": "Yao-Po Wang"},
     {"accountId": "712020:42e52160-3d4d-4b26-872f-d0b0cefa2507", "displayName": "CJ Yang"},
 ]
-UTC8 = datetime.timezone(datetime.timedelta(hours=8))
-WINDOW = datetime.timedelta(hours=1)
-# batch -> (start hour UTC+8 on the deploy date, [(region start, region end)]); 24 rolls to the next day
-BATCH_REGIONS = {
-    "batch1": (9, [("customfield_20808", "customfield_20809")]),  # EU
-    "batch2": (15, [("customfield_20810", "customfield_20811"),  # US East
-                    ("customfield_20812", "customfield_20813")]),  # US West
-    "batch3": (24, [("customfield_20806", "customfield_20807"),  # APAC
-                    ("customfield_21276", "customfield_21277")]),  # AUS
-}
 
 
 def sh(cmd):
@@ -241,17 +222,6 @@ def description(version, owners, deploy_day):
         heading("Maintenance window", 3), para({"type": "inlineCard", "attrs": {"url": MAINTENANCE_URL}}),
         cc_paragraph(),
     ]}
-
-
-def planned_dates(deploy_day):
-    day = datetime.datetime.combine(deploy_day, datetime.time.min, tzinfo=UTC8)
-    fields = {}
-    for hour, regions in BATCH_REGIONS.values():
-        start = day + datetime.timedelta(hours=hour)
-        for start_field, end_field in regions:
-            fields[start_field] = start.strftime("%Y-%m-%dT%H:%M:%S.000%z")
-            fields[end_field] = (start + WINDOW).strftime("%Y-%m-%dT%H:%M:%S.000%z")
-    return fields
 
 
 def create(version, tickets, date, dry_run):

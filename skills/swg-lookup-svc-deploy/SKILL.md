@@ -1,6 +1,6 @@
 ---
-name: deploy-swg-lookup-svc
-description: Trigger the Jenkins job `one_button_swg-lookup-svc_helm` on either NPE (cdjenkins.betaskope) or PROD (cdjenkins.sjc1.nskope.net) to deploy swg-lookup-svc. Auto-infers env from POPS, collects build parameters interactively (including PDV — every deploy now runs PDV against the new build by default; PDV_CONFIG_IMAGE_TAG auto-resolves to the latest `netSkope/swg-lookup-svc-pdv` GitHub release unless the user supplies one), confirms with the user, kicks off the build, and polls the queue + build until it reaches a final status. Use when the user says things like "deploy swg-lookup-svc", "run the swg-lookup-svc helm job", "npe/prod helm deploy swg-lookup-svc", or references the one_button_swg-lookup-svc_helm Jenkins job.
+name: swg-lookup-svc-deploy
+description: Trigger the Jenkins job `one_button_swg-lookup-svc_helm` on either NPE (cdjenkins.betaskope) or PROD (cdjenkins.sjc1.nskope.net) to deploy swg-lookup-svc. Auto-infers env from POPS, collects build parameters interactively (including PDV — every deploy now runs PDV against the new build by default; PDV_CONFIG_IMAGE_TAG auto-resolves to the latest `netSkope/swg-lookup-svc-pdv` GitHub release unless the user supplies one), confirms with the user, kicks off the build, and polls the queue + build until it reaches a final status. Use when the user says things like "deploy swg-lookup-svc", "run the swg-lookup-svc helm job", "npe/prod helm deploy swg-lookup-svc", or references the one_button_swg-lookup-svc_helm Jenkins job. The deploy ticket for TICKET comes from swg-lookup-svc-deploy-ticket.
 disable-model-invocation: false
 argument-hint: [ENV=npe|prod] [POPS=..] [RELEASE=..] [TICKET=..] [COMPONENT_NAME=..] [DEPLOY_TYPE=..] [OTHER=..]
 allowed-tools: Bash(python3 *) Bash(bash -ic *) Read AskUserQuestion
@@ -8,7 +8,7 @@ allowed-tools: Bash(python3 *) Bash(bash -ic *) Read AskUserQuestion
 
 Trigger and follow the Jenkins job `one_button_swg-lookup-svc_helm` on
 either NPE or PROD using the helper script at
-`${CLAUDE_PLUGIN_ROOT}/skills/deploy-swg-lookup-svc/run.py`.
+`${CLAUDE_PLUGIN_ROOT}/skills/swg-lookup-svc-deploy/run.py`.
 
 - NPE: `$NPE_JENKINS_URL/job/one_button_swg-lookup-svc_helm/`
 - PROD: `$PROD_JENKINS_URL/job/one_button_swg-lookup-svc_helm/`
@@ -52,7 +52,9 @@ may override any of them — `VERBOSE`, `WAIT`, `TIMEOUT`, `ATOMIC`,
   ticket via `AskUserQuestion` — do not fall back to `ENG-1` or any
   other value. The job runs with `BYPASS_JIRA=YES` so the ticket
   isn't validated, but we still want a real ticket on the build
-  record for traceability.
+  record for traceability. For a prod release this is the Deployment
+  ticket — if the user doesn't have one yet, offer to create it with
+  the `swg-lookup-svc-deploy-ticket` skill.
 - **POPS uses the full pop name**, matching the `pops.yml` block in
   `netSkope/swg-github-workflow/.github/workflows/deployment.yml`
   (source of truth for alias → full-name + cluster). When the user
@@ -222,7 +224,7 @@ message returned via the API.
 ## How to run the helper
 
 ```bash
-bash -ic 'python3 "${CLAUDE_PLUGIN_ROOT}/skills/deploy-swg-lookup-svc/run.py" \
+bash -ic 'python3 "${CLAUDE_PLUGIN_ROOT}/skills/swg-lookup-svc-deploy/run.py" \
   --env <npe|prod> \
   --param POPS=<pops-in-this-cluster> \
   --param CLUSTER_NAME=<c1|c4> \
