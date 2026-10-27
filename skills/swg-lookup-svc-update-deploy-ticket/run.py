@@ -73,6 +73,18 @@ def mentioned_users(doc):
     return out
 
 
+def remove_link(key, ticket):
+    links = jira("GET", f"/rest/api/3/issue/{key}?fields=issuelinks")["fields"]["issuelinks"]
+    for l in links:
+        if l["type"]["name"] != "Relates":
+            continue
+        other = l.get("outwardIssue") or l.get("inwardIssue")
+        if other and other["key"] == ticket:
+            jira("DELETE", f"/rest/api/3/issueLink/{l['id']}")
+            return
+    sys.exit(f"no Relates link between {key} and {ticket} found")
+
+
 def show(key):
     fields = ["summary", "status", "issuetype", "issuelinks", "customfield_20823",
               "description", *PLANNED_FIELDS]
@@ -167,26 +179,25 @@ def update(key, date, version, add, remove, comment, dry_run):
         fields["description"] = _deploy_ticket.description(version, owners, deploy_day)
     if not fields and not add and not remove and not comment:
         sys.exit("nothing to update")
-    # Jira rejects more than one issuelinks operation per request, so links go
-    # one at a time; fields ride along on the first PUT only.
+    # Links are added via issue PUT (one issuelinks op per request) and removed
+    # via DELETE /issueLink/{id} — removeRelates needs delete-issue permission.
     remove = [t for t in remove if t not in add]
     if dry_run:
         print(json.dumps({"fields": fields,
                           "add_links": add, "remove_links": remove,
                           **({"comment": comment} if comment else {})}, indent=2))
         return
-    link_ops = [{"add": {"type": {"name": "Relates"}, "outwardIssue": {"key": t}}} for t in add] + \
-               [{"remove": {"type": {"name": "Relates"}, "outwardIssue": {"key": t}}} for t in remove]
+    link_ops = [{"add": {"type": {"name": "Relates"}, "outwardIssue": {"key": t}}} for t in add]
     if fields and link_ops:
-        body = {"fields": fields, "update": {"issuelinks": [link_ops[0]]}}
-        jira("PUT", f"/rest/api/3/issue/{key}", body)
-        for op in link_ops[1:]:
-            jira("PUT", f"/rest/api/3/issue/{key}", {"update": {"issuelinks": [op]}})
-    elif link_ops:
-        for op in link_ops:
-            jira("PUT", f"/rest/api/3/issue/{key}", {"update": {"issuelinks": [op]}})
+        jira("PUT", f"/rest/api/3/issue/{key}",
+             {"fields": fields, "update": {"issuelinks": [link_ops[0]]}})
+        link_ops = link_ops[1:]
     elif fields:
         jira("PUT", f"/rest/api/3/issue/{key}", {"fields": fields})
+    for op in link_ops:
+        jira("PUT", f"/rest/api/3/issue/{key}", {"update": {"issuelinks": [op]}})
+    for t in remove:
+        remove_link(key, t)
     if comment:
         jira("POST", f"/rest/api/3/issue/{key}/comment",
              {"body": {"type": "doc", "version": 1, "content": [
