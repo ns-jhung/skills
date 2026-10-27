@@ -45,7 +45,7 @@ def sh(cmd):
 
 
 def is_bot(login):
-    # fallback for commits with no linked GitHub author, where the compare API's type is null
+    # login suffix rule — catches User-typed bots like cicd-bot, where .type isn't "Bot"
     login = (login or "").lower()
     return login.endswith("-bot") or login.endswith("[bot]")
 
@@ -79,6 +79,31 @@ def compare_commits(base, head):
     return [json.loads(line) for line in r.stdout.splitlines() if line.strip()]
 
 
+def prs_in_range(base, head):
+    """Non-bot commits between two tags, with each PR's Jira-validated ticket keys.
+
+    Shared by collect() here and the update skill's sync_plan, so both agree
+    on what shipped. Returns (prs, tickets, dropped_invalid, skipped_bot).
+    """
+    prs, skipped = [], 0
+    for c in compare_commits(base, head):
+        login = c["login"] or c["name"]
+        if c["type"] == "Bot" or is_bot(login):
+            skipped += 1
+            continue
+        title = c["msg"].splitlines()[0]
+        pr = PR_RE.search(title)
+        keys = TICKET_RE.findall(PR_RE.sub("", title))
+        prs.append({"pr": int(pr.group(1)) if pr else None, "author": login,
+                    "title": title, "tickets": keys})
+    keys = [k for p in prs for k in p["tickets"]]
+    valid = valid_ticket_keys(keys)
+    for p in prs:
+        p["tickets"] = [k for k in p["tickets"] if k in valid]
+    return prs, [k for k in dict.fromkeys(keys) if k in valid], \
+        sorted(set(keys) - valid), skipped
+
+
 def collect():
     latest, stg01 = latest_tag(), stg01_version()
     out = {"latest_tag": latest, "stg01_version": stg01, "prs": [], "skipped_bot_prs": 0,
@@ -86,24 +111,8 @@ def collect():
     if latest == stg01:
         print(json.dumps(out, indent=2))
         return
-    for c in compare_commits(stg01, latest):
-        login = c["login"] or c["name"]
-        if c["type"] == "Bot" or (c["type"] is None and is_bot(login)):
-            out["skipped_bot_prs"] += 1
-            continue
-        title = c["msg"].splitlines()[0]
-        pr = PR_RE.search(title)
-        keys = TICKET_RE.findall(PR_RE.sub("", title))
-        out["prs"].append({"pr": int(pr.group(1)) if pr else None, "author": login,
-                           "title": title, "tickets": keys})
-    keys = [k for p in out["prs"] for k in p["tickets"]]
-    valid = valid_ticket_keys(keys)
-    dropped = [k for k in keys if k not in valid]
-    if dropped:
-        out["dropped_invalid_tickets"] = sorted(set(dropped))
-        for p in out["prs"]:
-            p["tickets"] = [k for k in p["tickets"] if k in valid]
-    out["tickets"] = [k for k in dict.fromkeys(keys) if k in valid]
+    out["prs"], out["tickets"], out["dropped_invalid_tickets"], out["skipped_bot_prs"] = \
+        prs_in_range(stg01, latest)
     print(json.dumps(out, indent=2))
 
 

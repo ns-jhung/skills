@@ -1,6 +1,6 @@
 ---
 name: swg-lookup-svc-update-deploy-ticket
-description: Update an existing ENG "Deployment" Jira ticket in place — always syncs the Release Version to the latest swg-lookup-svc release tag and links every not-yet-linked ticket from the PRs in the range, plus optional reschedule of the prod deploy date (recalculates every region's planned start/end), add/remove "relates to" ticket links, or a status comment. The user must provide the ticket key; ask for it if they haven't. Use whenever the user wants to update, edit, reschedule, or change a swg-lookup-svc / ENG deployment ticket, says things like "update the deploy ticket", "push ENG-XXXXXX to next Tuesday", "add ENG-YYYYYY to the deployment ticket", or "comment on the deploy ticket that batch 2 is done" — but NOT to create one (use swg-lookup-svc-deploy-ticket) or resolve one (use resolve-ticket).
+description: Update an existing ENG "Deployment" Jira ticket in place — always syncs the Release Version to the latest swg-lookup-svc release tag and links every not-yet-linked ticket from the PRs in the range (bot commits filtered like the creation skill), rewrites the summary and description to the new version (Version bullet, Dependencies @mentions of newly linked ticket owners), plus optional reschedule of the prod deploy date (recalculates every region's planned start/end), add/remove "relates to" ticket links, or a status comment. The user must provide the ticket key; ask for it if they haven't. Use whenever the user wants to update, edit, reschedule, or change a swg-lookup-svc / ENG deployment ticket, says things like "update the deploy ticket", "push ENG-XXXXXX to next Tuesday", "add ENG-YYYYYY to the deployment ticket", or "comment on the deploy ticket that batch 2 is done" — but NOT to create one (use swg-lookup-svc-deploy-ticket) or resolve one (use resolve-ticket).
 disable-model-invocation: false
 allowed-tools: Bash(bash -ic *) Read AskUserQuestion
 ---
@@ -28,12 +28,15 @@ unrelated ticket.
    bash -ic 'python3 ${CLAUDE_PLUGIN_ROOT}/skills/swg-lookup-svc-update-deploy-ticket/run.py show <KEY>' 2>/dev/null
    ```
    Prints the summary, status, release version, current planned dates per
-   region, and existing "relates to" links.
+   region, existing "relates to" links, and the accountIds already @mentioned
+   in the description.
 
    Every `update` also syncs the ticket to the latest swg-lookup-svc release
    tag (Release Version field + any missing "relates to" links from PRs in
-   the range), regardless of which flags the user passed. To preview that
-   sync on its own, run `collect`:
+   the range; bot commits are filtered the same way as at creation time —
+   GitHub `Bot`-type authors plus logins like `cicd-bot`), regardless of
+   which flags the user passed. To preview that sync on its own, run
+   `collect`:
    ```bash
    bash -ic 'python3 ${CLAUDE_PLUGIN_ROOT}/skills/swg-lookup-svc-update-deploy-ticket/run.py collect <KEY>' 2>/dev/null
    ```
@@ -54,20 +57,26 @@ unrelated ticket.
 
    - **Version/link sync (always applied, no flag):** every update re-targets
      the ticket to the latest swg-lookup-svc release tag and links any
-     not-yet-linked tickets from the PRs in the old→new range. `--version`
-     only exists to verify the user's expectation — it errors unless it
-     matches the latest tag; omitted, the latest tag is used.
+     not-yet-linked tickets from the PRs in the old→new range (bot commits
+     filtered like at creation). `--version` only exists to verify the user's
+     expectation — it errors unless it matches the latest tag; omitted, the
+     latest tag is used.
+   - **Summary/description rewrite (applied when the summary names a
+     different version):** the summary becomes `[swg-lookup-svc] deploy
+     <latest tag>` and the description is rebuilt with the creation
+     helpers — the Version bullet shows the new tag, and the Dependencies
+     section @mentions the owner (assignee, else reporter) of every newly
+     linked ticket not already mentioned or in the CC list. The Events
+     table is rebuilt from the existing batch1 planned date (or `--date`
+     when given).
    - `--date` is the prod deploy date (day of Batch 1 and 2). The script
      recalculates every region's planned start/end from `BATCH_REGIONS` in
      `swg-lookup-svc-common/schedule.py` — the same batch hours and UTC+8
      window used when the ticket was created — so a reschedule stays
      consistent with the original schedule. If the user hasn't given a date,
      ask; never guess.
-   - `--version` rewrites the Release Version field. If it follows the
-     standard `[swg-lookup-svc] deploy <tag>` shape, mention that the summary
-     still names the old version — offer to update it by hand via the Jira UI
-     or a follow-up request, since summary edits are deliberately not automated
-     here.
+   - `--version` rewrites the Release Version field (and, via the sync, the
+     summary and description when they still name an older version).
    - `--add-tickets` / `--remove-tickets` manage the "Relates" links the
      deployment validator cares about, on top of the sync.
    - `--comment` posts a plain-text status comment.

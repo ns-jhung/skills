@@ -25,7 +25,8 @@ harmless "no job control" stderr noise with `2>/dev/null`.
      on stg01 (`~/.nsk/stork-stg01-mp-iad0-nc4.yaml`, refreshed via `nsk` first).
      stg01 tracks the last released version, so it is the baseline.
    - `prs` — every non-bot commit in `stg01_version...latest_tag` (squash-merged
-     PRs; bot authors are counted in `skipped_bot_prs` and dropped).
+     PRs; bot authors — GitHub `Bot` type plus logins matching `is_bot()`, e.g.
+     `cicd-bot` — are counted in `skipped_bot_prs` and dropped).
    - `tickets` — unique ticket keys from those PR titles, in merge order,
      validated against Jira; keys that don't resolve land in
      `dropped_invalid_tickets` instead.
