@@ -27,11 +27,13 @@ vars are loaded.
 ## Job parameters
 
 The Jenkins job defines many parameters. The ones that change per run
-and that the user must supply:
+and that the user must supply (all are real job params except `ENV`,
+which is skill-level only — it selects which Jenkins env to hit and is
+never sent to the job):
 
 | Parameter | Notes |
 |---|---|
-| `ENV` | `npe` (default) or `prod`. Auto-inferred from POPS when possible (see below). |
+| `ENV` | `npe` (default) or `prod`. Skill-level only, not a job param. Auto-inferred from POPS when possible (see below). |
 | `POPS` | Comma-separated pop list, e.g. `qa01` (npe) or `sjc1` (prod). Required. |
 | `RELEASE` | swg-lookup-svc version to deploy, e.g. `v0.0.0-PR1352.5870` (npe-only) or `v1.2.3`. Required. |
 | `TICKET` | JIRA ticket. Required — always ask the user. |
@@ -45,6 +47,8 @@ may override any of them — `VERBOSE`, `WAIT`, `TIMEOUT`, `ATOMIC`,
 `SLACK_CHANNEL`, `BYPASS_MONITORING_RESULT`, `BYPASS_JIRA`,
 `RUN_QE_PDV`, `PDV_CONFIG_IMAGE_TAG`, `SELECT_ALL_POPS`,
 `SELECT_ALL_COMPONENTS`, `REGIONS`, `POP_TYPES`.
+(`DEPLOYMENT_JOB_ID` and `TRIGGERED_BY` also exist on the job but are
+internal, set by cd-deployment-orchestrator — never send them.)
 
 ### Defaults & conventions
 
@@ -106,8 +110,8 @@ may override any of them — `VERBOSE`, `WAIT`, `TIMEOUT`, `ATOMIC`,
   `gh release view --repo github.com/netSkope/swg-lookup-svc-pdv --json tagName --jq .tagName`
   If the user provides a tag explicitly, use it; otherwise resolve via
   `gh release view` at confirm time and show it in the confirmation.
-- **INSIGHTS_RELEASE_VERSION** defaults to `YYYY.MM` of today.
-- **RUN_QE_PDV defaults to `DEPLOY_AND_PDV`** on both envs. Every
+- **RUN_QE_PDV defaults to `DEPLOY_AND_PDV`** on both envs (skill-level
+  default; the job's own default is `DEPLOY_ONLY`). Every
   deploy now runs PDV against the new build; `DEPLOY_ONLY` is no
   longer the default. The user may still explicitly request
   `DEPLOY_ONLY` or `PDV_ONLY` for a specific run.
