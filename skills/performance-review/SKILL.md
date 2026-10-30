@@ -163,8 +163,10 @@ self-explanatory when revisited:
 ```
 
 Write the content in English (the review system and People Leader read
-English), keep bullets concrete — every Q1 bullet should name at least one
-ticket key so the claim is verifiable. Never infer FedRAMP/compliance work as
+English), keep bullets concrete, but **never put ticket keys or PR numbers
+in the question sections** — nobody reading a review remembers or looks up
+ENG-XXXXXX. Name the customer, feature, and impact instead; the Tickets
+table at the top is the evidence list if anyone wants the keys. Never infer FedRAMP/compliance work as
 a "skill developed" for Q2 just because FedRAMP-labeled tickets appear; Q2
 suggestions should come from what the user visibly had to learn (new
 technology, new systems, new process), not from ticket labels. Close with the
