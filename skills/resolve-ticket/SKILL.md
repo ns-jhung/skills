@@ -89,10 +89,17 @@ entirely, so let the type's reference decide which fields exist at all.
 5. **Set the fields** — every field the reference lists, in one `editJiraIssue`,
    using its field keys and value shapes and the values the user confirmed.
 
-6. **Get final go-ahead.** The transition is irreversible, so ask for an explicit
-   yes via `AskUserQuestion`. Everything was already confirmed in step 4, so keep
-   this to a compact go/no-go: the status change plus anything you defaulted
-   without asking.
+6. **Get final go-ahead, listing every field.** The transition is irreversible,
+   so ask for an explicit yes via `AskUserQuestion` — and in the question text,
+   list **all** fields that were set on the ticket, not just the ones you
+   defaulted without asking. The step-4 conversation spreads values across
+   multiple questions and free-text drafts, so by this point neither you nor the
+   user has seen the complete picture in one place; a ticket that resolves with a
+   wrong value buried in an unlisted field is exactly what this checkpoint exists
+   to catch. One compact table or bullet list — field name and value for every
+   field in the step-5 `editJiraIssue` call (including Fix Version/s, QA, and the
+   type-specific selects), then the status change — with a single go/no-go
+   question.
 
 7. **Transition to Resolved.** Fetch the live transition list — IDs are
    workflow-specific and can differ per issue, so don't reuse one from memory or
