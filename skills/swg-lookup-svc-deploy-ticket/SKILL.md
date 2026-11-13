@@ -72,9 +72,10 @@ Modeled on ENG-1151426, minus the parts the user doesn't want copied:
   (tickets are issue links instead).
 - **Description:** Action Items, Dependencies (linked-ticket owners tagged to
   fill it in, above an "N/A" bullet they replace), an Events table (rows and
-  date offsets from `EVENTS`), Deployment Info (Version, Jenkins jobs,
-  Monitoring dashboard, Maintenance window page), and a trailing `cc @…` line
-  (`CC_LIST`).
+  date offsets from `EVENTS`, with a trailing Status column left blank for
+  humans to fill in as each event completes), Deployment Info (Version,
+  Jenkins jobs, Monitoring dashboard, Maintenance window page), and a
+  trailing `cc @…` line (`CC_LIST`).
 - **Fields:** Component URL Security (URLSec), Assignee = the caller, and the
   remaining defaults set in `create()` (Deployment Type, Datacenters,
   Customer/Service Impact, Business hours, Release Version, Engineering VP,

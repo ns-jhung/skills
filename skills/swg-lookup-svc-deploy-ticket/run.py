@@ -209,13 +209,13 @@ def date_node(day):
 
 def description(version, owners, deploy_day):
     rows = [{"type": "tableRow", "content": [cell(para(text(h, True)), header=True)
-                                             for h in ("Event", "Date", "Detail")]}]
+                                             for h in ("Event", "Date", "Detail", "Status")]}]
     for event, offset, detail, pops in EVENTS:
         detail_cell = [para(text(detail, True))] if detail else []
         if pops:
             detail_cell.append(bullets(pops))
         rows.append({"type": "tableRow",
-                     "content": [cell(para(text(event))), cell(para(date_node(deploy_day + datetime.timedelta(days=offset)))), cell(*detail_cell)]})
+                     "content": [cell(para(text(event))), cell(para(date_node(deploy_day + datetime.timedelta(days=offset)))), cell(*detail_cell), cell()]})
     return {"type": "doc", "version": 1, "content": [
         heading("Action Items", 2),
         bullets(["Deploy SWG-lookup-svc to all mp environments."]),
