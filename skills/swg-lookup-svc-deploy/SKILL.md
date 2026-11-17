@@ -1,6 +1,6 @@
 ---
 name: swg-lookup-svc-deploy
-description: Trigger the Jenkins job `one_button_swg-lookup-svc_helm` on either NPE (cdjenkins.betaskope) or PROD (cdjenkins.sjc1.nskope.net) to deploy swg-lookup-svc. Auto-infers env from POPS, collects build parameters interactively (including PDV — every deploy now runs PDV against the new build by default; PDV_CONFIG_IMAGE_TAG auto-resolves to the latest `netSkope/swg-lookup-svc-pdv` GitHub release unless the user supplies one), confirms with the user, kicks off the build, and polls the queue + build until it reaches a final status. Use when the user says things like "deploy swg-lookup-svc", "run the swg-lookup-svc helm job", "npe/prod helm deploy swg-lookup-svc", or references the one_button_swg-lookup-svc_helm Jenkins job. The deploy ticket for TICKET comes from swg-lookup-svc-deploy-ticket.
+description: Trigger the Jenkins job `one_button_swg-lookup-svc_helm` on either NPE (cdjenkins.betaskope) or PROD (cdjenkins.sjc1.nskope.net) to deploy swg-lookup-svc. Auto-infers env from POPS, collects build parameters interactively (including PDV — every deploy runs PDV against the new build by default; PDV_CONFIG_IMAGE_TAG auto-resolves to the latest `netSkope/swg-lookup-svc-pdv` GitHub release unless the user supplies one), confirms with the user, kicks off the build, and polls the queue + build until it reaches a final status. Use when the user says things like "deploy swg-lookup-svc", "run the swg-lookup-svc helm job", "npe/prod helm deploy swg-lookup-svc", or references the one_button_swg-lookup-svc_helm Jenkins job. The deploy ticket for TICKET comes from swg-lookup-svc-deploy-ticket.
 disable-model-invocation: false
 argument-hint: [ENV=npe|prod] [POPS=..] [RELEASE=..] [TICKET=..] [COMPONENT_NAME=..] [DEPLOY_TYPE=..] [OTHER=..]
 allowed-tools: Bash(python3 *) Bash(bash -ic *) Read AskUserQuestion
@@ -100,7 +100,7 @@ internal, set by cd-deployment-orchestrator — never send them.)
   - `ENV=prod` → always `dataplane-production-helm`
   - `ENV=npe`, `v0.0.0-PR*` → `dataplane-develop-helm`
   - `ENV=npe`, anything else → `dataplane-release-helm`
-- **PDV_ARTIFACTORY_CHANNEL** (always sent now that PDV always runs):
+- **PDV_ARTIFACTORY_CHANNEL** (always sent, since PDV always runs):
   - `ENV=prod` → `dataplane-production-docker`
   - `ENV=npe`, PDV tag `v0.0.0-PR*` → `dataplane-develop-docker`
   - `ENV=npe`, anything else (typical: `v1.0.x`) → `dataplane-release-docker`
@@ -111,10 +111,8 @@ internal, set by cd-deployment-orchestrator — never send them.)
   If the user provides a tag explicitly, use it; otherwise resolve via
   `gh release view` at confirm time and show it in the confirmation.
 - **RUN_QE_PDV defaults to `DEPLOY_AND_PDV`** on both envs (skill-level
-  default; the job's own default is `DEPLOY_ONLY`). Every
-  deploy now runs PDV against the new build; `DEPLOY_ONLY` is no
-  longer the default. The user may still explicitly request
-  `DEPLOY_ONLY` or `PDV_ONLY` for a specific run.
+  default; the job's own default is `DEPLOY_ONLY`). The user may still
+  explicitly request `DEPLOY_ONLY` or `PDV_ONLY` for a specific run.
 - Because PDV always runs, always send `PDV_ARTIFACTORY_CHANNEL`,
   `PDV_CONFIG_IMAGE_NAME=swg-lookup-svc-pdv-config`, and
   `PDV_CONFIG_IMAGE_TAG=<resolved tag>` — do not omit them.

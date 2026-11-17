@@ -113,7 +113,11 @@ directory is the user's existing convention).
    Present a `AskUserQuestion` (or plain list if too long) with:
    - the grouped ticket list with the Q1 draft bullets, for approve-or-edit;
    - a *suggested* Q2 draft inferred from ticket types (new tech touched,
-     migrations, new domains), marked clearly as a suggestion;
+     migrations, new domains), marked clearly as a suggestion. Never infer
+     FedRAMP/compliance work as a "skill developed" just because
+     FedRAMP-labeled tickets appear; Q2 suggestions come from what the user
+     visibly had to learn (new technology, new systems, new process), not
+     from ticket labels.
    - a direct question for Q3, since only the user knows what support they
      need.
    Wait for the user's answers before writing the file.
@@ -166,8 +170,5 @@ Write the content in English (the review system and People Leader read
 English), keep bullets concrete, but **never put ticket keys or PR numbers
 in the question sections** — nobody reading a review remembers or looks up
 ENG-XXXXXX. Name the customer, feature, and impact instead; the Tickets
-table at the top is the evidence list if anyone wants the keys. Never infer FedRAMP/compliance work as
-a "skill developed" for Q2 just because FedRAMP-labeled tickets appear; Q2
-suggestions should come from what the user visibly had to learn (new
-technology, new systems, new process), not from ticket labels. Close with the
-file path so the user can open it.
+table at the top is the evidence list if anyone wants the keys. Close with
+the file path so the user can open it.
