@@ -1,6 +1,6 @@
 ---
 name: swg-lookup-svc-update-deploy-ticket
-description: Update an existing ENG "Deployment" Jira ticket in place — always syncs the Release Version to the latest swg-lookup-svc release tag and links every not-yet-linked ticket from the PRs in the range (bot commits filtered like the creation skill), rewrites the summary and description to the new version (Version bullet, Dependencies @mentions of newly linked ticket owners), plus optional reschedule of the prod deploy date (recalculates every region's planned start/end), add/remove "relates to" ticket links, or a status comment. The user must provide the ticket key; ask for it if they haven't. Use whenever the user wants to update, edit, reschedule, or change a swg-lookup-svc / ENG deployment ticket, says things like "update the deploy ticket", "push ENG-XXXXXX to next Tuesday", "add ENG-YYYYYY to the deployment ticket", or "comment on the deploy ticket that batch 2 is done" — but NOT to create one (use swg-lookup-svc-deploy-ticket) or resolve one (use resolve-ticket).
+description: Update an existing ENG "Deployment" Jira ticket in place — always syncs the Release Version to the latest swg-lookup-svc release tag and links every not-yet-linked ticket from the PRs in the range (bot commits filtered like the creation skill), rewrites the summary and description to the new version (Version bullet, Dependencies @mentions of newly linked ticket owners), plus optional reschedule of the prod deploy date (recalculates every region's planned start/end), add/remove "relates to" ticket links, or a status comment. Use whenever the user wants to update, edit, reschedule, or change a swg-lookup-svc / ENG deployment ticket, says things like "update the deploy ticket", "push ENG-XXXXXX to next Tuesday", "add ENG-YYYYYY to the deployment ticket", or "comment on the deploy ticket that batch 2 is done" — but NOT to create one (use swg-lookup-svc-deploy-ticket) or resolve one (use resolve-ticket).
 disable-model-invocation: false
 allowed-tools: Bash(bash -ic *) Read AskUserQuestion
 ---
@@ -87,6 +87,7 @@ unrelated ticket.
 
 When the user also asks to update the *linked* tickets (e.g. add a comment to
 each related ticket, or mark them as shipped in this release), repeat this
-same flow per linked key — `show` first, confirm, then `update --comment ...`
-— after the user confirms the list. Never fan out writes to tickets the user
-didn't explicitly name or approve.
+same flow per linked key — `show` first, then `update --comment ...` — after
+the user confirms the list. Unlike the deployment ticket itself (step 3),
+writes to *other* tickets do need that confirmation. Never fan out writes to
+tickets the user didn't explicitly name or approve.
